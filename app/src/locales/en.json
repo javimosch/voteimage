@@ -110,5 +110,19 @@
   "importStatusError": "Error: {message}",
   "statusImportSuccess": "Import successful! Refreshing list...",
   "statusImportFailed": "Import failed: {message}",
-  "unauthorizedError": "Unauthorized. Please refresh and login."
+  "unauthorizedError": "Unauthorized. Please refresh and login.",
+
+  "passwordModalTitle": "Enter Namespace Password",
+  "passwordModalInfo": "This namespace is password protected. Please enter the password to continue.",
+  "passwordPlaceholder": "Enter password",
+  "submitPasswordBtn": "Submit",
+  "passwordProtectionTitle": "Password Protection",
+  "setPasswordPlaceholder": "Set namespace password",
+  "setPasswordBtn": "Set Password",
+  "statusPasswordSet": "Password set successfully.",
+  "statusPasswordRemoved": "Password removed.",
+  "statusPasswordInvalid": "Invalid password.",
+  "statusPasswordVerified": "Password verified.",
+  "statusNamespaceProtected": "Namespace is password protected.",
+  "statusNamespaceNotProtected": "Namespace is not password protected."
 }

@@ -110,5 +110,19 @@
   "importStatusError": "Erreur : {message}",
   "statusImportSuccess": "Importation réussie ! Rafraîchissement de la liste...",
   "statusImportFailed": "Échec de l'importation : {message}",
-  "unauthorizedError": "Non autorisé. Veuillez rafraîchir et vous connecter."
+  "unauthorizedError": "Non autorisé. Veuillez rafraîchir et vous connecter.",
+
+  "passwordModalTitle": "Entrer le mot de passe",
+  "passwordModalInfo": "Cet espace est protégé par mot de passe. Veuillez entrer le mot de passe pour continuer.",
+  "passwordPlaceholder": "Entrer le mot de passe",
+  "submitPasswordBtn": "Soumettre",
+  "passwordProtectionTitle": "Protection par mot de passe",
+  "setPasswordPlaceholder": "Définir le mot de passe",
+  "setPasswordBtn": "Définir",
+  "statusPasswordSet": "Mot de passe défini avec succès.",
+  "statusPasswordRemoved": "Mot de passe supprimé.",
+  "statusPasswordInvalid": "Mot de passe invalide.",
+  "statusPasswordVerified": "Mot de passe vérifié.",
+  "statusNamespaceProtected": "L'espace est protégé par mot de passe.",
+  "statusNamespaceNotProtected": "L'espace n'est pas protégé par mot de passe."
 }

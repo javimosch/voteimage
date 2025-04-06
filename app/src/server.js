@@ -260,7 +260,8 @@ app.post('/namespace', async (req, res) => {
         adminKey: adminKey,
         createdAt: new Date().toISOString(),
         logos: [],
-        friendlyUrlName: null
+        friendlyUrlName: null,
+        password: null // Add password field, initially null
     };
 
     try {
@@ -273,7 +274,46 @@ app.post('/namespace', async (req, res) => {
     }
 });
 
-// --- NEW ENDPOINT: Set Friendly URL ---
+// --- NEW ENDPOINT: Set Namespace Password ---
+app.post('/namespace/password', async (req, res) => {
+    const { namespace, admin } = req.query;
+    const { password } = req.body;
+
+    if (!namespace || !admin) {
+        return res.status(400).json({ message: 'Namespace ID and Admin Key are required.' });
+    }
+    if (typeof password !== 'string') {
+        return res.status(400).json({ message: 'Password (string) is required in the request body.' });
+    }
+
+    try {
+        const isAdmin = await validateAdminKey(namespace, admin);
+        if (!isAdmin) {
+            return res.status(403).json({ message: 'Invalid Admin Key.' });
+        }
+
+        const data = await readNamespaceData(namespace);
+        if (!data) {
+            return res.status(404).json({ message: 'Namespace not found.' });
+        }
+
+        // For POC, store password as plain text
+        // TODO: Implement password hashing in production
+        data.password = password || null; // Allow removing password by sending empty string
+
+        await writeNamespaceData(namespace, data);
+
+        console.log(`Password ${password ? 'set' : 'removed'} for namespace ${namespace}`);
+        res.status(200).json({ 
+            message: password ? 'Password set successfully.' : 'Password removed.',
+            isProtected: !!password
+        });
+    } catch (error) {
+        console.error(`Error setting password for namespace ${namespace}:`, error);
+        res.status(500).json({ message: 'Failed to set password.' });
+    }
+});
+
 app.post('/namespace/friendly-url', async (req, res) => {
     const { namespace, admin } = req.query;
     const { friendlyName } = req.body;
@@ -320,7 +360,47 @@ app.post('/namespace/friendly-url', async (req, res) => {
     }
 });
 
-// GET /logos?namespace=[id] - Get logos for a namespace
+// --- NEW ENDPOINT: Verify Namespace Password ---
+app.post('/namespace/verify-password', async (req, res) => {
+    const { namespace } = req.query;
+    const { password } = req.body;
+
+    if (!namespace) {
+        return res.status(400).json({ message: 'Namespace ID is required.' });
+    }
+    if (typeof password !== 'string') {
+        return res.status(400).json({ message: 'Password (string) is required in the request body.' });
+    }
+
+    try {
+        const data = await readNamespaceData(namespace);
+        if (!data) {
+            return res.status(404).json({ message: 'Namespace not found.' });
+        }
+
+        // If namespace has no password, always allow access
+        if (!data.password) {
+            return res.status(200).json({ 
+                message: 'Namespace is not password protected.',
+                verified: true
+            });
+        }
+
+        // For POC, simple string comparison
+        // TODO: Implement proper password comparison in production
+        const verified = data.password === password;
+
+        res.status(verified ? 200 : 401).json({
+            message: verified ? 'Password verified.' : 'Invalid password.',
+            verified
+        });
+    } catch (error) {
+        console.error(`Error verifying password for namespace ${namespace}:`, error);
+        res.status(500).json({ message: 'Failed to verify password.' });
+    }
+});
+
+// --- MODIFY: GET /logos to check password protection ---
 app.get('/logos', async (req, res) => {
     const { namespace } = req.query;
     if (!namespace) {
@@ -332,15 +412,18 @@ app.get('/logos', async (req, res) => {
         if (!data) {
             return res.status(404).json({ message: 'Namespace not found.' });
         }
+
         const logosResponse = data.logos.map(logo => ({
             id: logo.id,
             path: logo.path,
             votes: logo.votes.length,
             description: logo.description || "" // Return description, default to empty string
         }));
+
         res.json({
             logos: logosResponse,
-            friendlyUrlName: data.friendlyUrlName || null
+            friendlyUrlName: data.friendlyUrlName || null,
+            isPasswordProtected: !!data.password // Add flag to indicate if password protected
         });
     } catch (error) {
         res.status(500).json({ message: 'Failed to retrieve logos.' });

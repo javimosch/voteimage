@@ -218,6 +218,30 @@
             </div>
         </div>
 
+        <!-- Password Modal -->
+        <div id="password-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-button" onclick="closePasswordModal()">&times;</span>
+                <h3 class="text-lg font-semibold mb-3" data-i18n="passwordModalTitle">Enter Namespace Password</h3>
+                <p class="text-sm mb-4 text-gray-600" data-i18n="passwordModalInfo">This namespace is password protected. Please enter the password to continue.</p>
+                <input type="password" id="password-input" data-i18n-placeholder="passwordPlaceholder" placeholder="Enter password" class="w-full p-2 border border-gray-300 rounded mb-4">
+                <button id="submit-password-btn" data-i18n="submitPasswordBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded w-full transition duration-150 ease-in-out">Submit</button>
+                <p id="password-modal-error" class="text-red-500 text-sm mt-2"></p>
+            </div>
+        </div>
+
+        <!-- Admin Password Controls -->
+        <div id="password-controls" class="hidden mt-4 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+            <h3 class="font-semibold text-lg mb-3" data-i18n="passwordProtectionTitle">Password Protection</h3>
+            <div class="space-y-2">
+                <div class="flex items-center gap-2">
+                    <input type="password" id="set-password-input" data-i18n-placeholder="setPasswordPlaceholder" placeholder="Set namespace password" class="flex-grow p-2 border border-gray-300 rounded">
+                    <button id="set-password-btn" data-i18n="setPasswordBtn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">Set Password</button>
+                </div>
+                <p id="password-status" class="text-sm text-gray-600"></p>
+            </div>
+        </div>
+
         <!-- Logo Viewer Modal -->
         <div id="logo-viewer-modal" class="logo-viewer-modal hidden">
             <span class="logo-viewer-close" id="logo-viewer-close-btn">&times;</span>
@@ -235,6 +259,8 @@
     </div>
 
     <script>
+        let isAdmin = false;
+        
         // --- I18N START ---
         const supportedLanguages = ['en', 'fr'];
         let currentLanguage = 'en';
@@ -418,10 +444,23 @@
         const logoViewerPrevBtn = document.getElementById('logo-viewer-prev');
         const logoViewerNextBtn = document.getElementById('logo-viewer-next');
         const logoViewerVoteBtn = document.getElementById('logo-viewer-vote-btn');
+            // Password protection variables
+            const passwordModal = document.getElementById('password-modal');
+            const passwordInput = document.getElementById('password-input');
+            const submitPasswordBtn = document.getElementById('submit-password-btn');
+            const passwordModalError = document.getElementById('password-modal-error');
+            const passwordControls = document.getElementById('password-controls');
+            const setPasswordInput = document.getElementById('set-password-input');
+            const setPasswordBtn = document.getElementById('set-password-btn');
+            const passwordStatus = document.getElementById('password-status');
+            let namespacePasswordVerified = false;
+
+            // Initialize password controls - they're already in the DOM
+            // Just need to show/hide based on admin status
 
         let currentNamespaceId = null;
         let currentAdminKey = null;
-        let isAdmin = false;
+        
         let displayedLogos = []; // To store the current list of logos
         let currentLogoIndex = -1; // Index of the logo currently shown in the viewer
         let currentFriendlyUrlName = null; // Store current friendly name
@@ -505,6 +544,8 @@
             isAdmin = !!currentAdminKey; // Assume admin if key exists, backend verifies actions
             if (isAdmin) {
                 adminControlsSection.style.display = 'block';
+                // Show password controls for admin
+                passwordControls.style.display = 'block';
                 // --- MODIFICATION START ---
                 // Show links if admin key is present in URL
                 const baseUrl = window.location.origin + window.location.pathname;
@@ -519,6 +560,8 @@
                 // --- MODIFICATION END ---
             } else {
                 adminControlsSection.style.display = 'none';
+                // Hide password controls for non-admin
+                passwordControls.style.display = 'none';
                 // Hide links if not admin
                 namespaceLinksDiv.style.display = 'none'; // Keep this line for non-admin view
             }
@@ -552,26 +595,36 @@
         }
 
         async function loadLogos() {
-            if (!currentNamespaceId) return;
-            // --- I18N: Use translation key ---
-            setStatusMessage('statusLoadingLogos', false);
-            logoGrid.innerHTML = ''; // Clear existing logos
-            noLogosMessage.style.display = 'none';
-            displayedLogos = []; // Reset logo list
+                if (!currentNamespaceId) return;
+                setStatusMessage('Loading logos...', false);
+                logoGrid.innerHTML = '';
+                noLogosMessage.style.display = 'none';
+                displayedLogos = [];
 
-            const responseData = await fetchLogos(currentNamespaceId);
+                try {
+                    const response = await fetch(`${apiUrl}/logos?namespace=${currentNamespaceId}`);
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            setStatusMessage('Namespace not found.', true);
+                            showWelcomeView();
+                            return;
+                        }
+                        throw new Error(`Failed to fetch logos: ${response.statusText}`);
+                    }
 
-            // --- MODIFICATION START: Process response data ---
-            if (responseData === null) {
-                 // Error handled in fetchLogos, view might be reset
-                 return;
-            }
+                    const data = await response.json();
 
-            processLogosResponse(responseData);
-            // --- I18N: Translate newly added logo elements ---
-            translatePage();
-            // --- END I18N ---
-            // --- MODIFICATION END ---
+                    // Check if namespace is password protected and not yet verified
+                    if (data.isPasswordProtected && !namespacePasswordVerified && !isAdmin) {
+                        openPasswordModal();
+                        return;
+                    }
+
+                    processLogosResponse(data);
+                } catch (error) {
+                    console.error('Error loading logos:', error);
+                    setStatusMessage(`Error: ${error.message}`, true);
+                }
         }
 
         function createLogoElement(logo, index) { // Accept index
@@ -999,15 +1052,95 @@
 
         // Close modal if user clicks outside of it
         window.onclick = function(event) {
+            if (event.target == passwordModal) {
+                    closePasswordModal();
+                }
             if (event.target == identifierModal) {
                 closeModal();
             }
-            // Close logo viewer if clicking background (added this check here)
-            // Check if the click is directly on the modal background, not children
             if (event.target == logoViewerModal) {
                  closeLogoViewer();
             }
         }
+
+            // Password Modal Control
+            function openPasswordModal() {
+                passwordModalError.textContent = '';
+                passwordInput.value = '';
+                passwordModal.style.display = 'block';
+            }
+
+            function closePasswordModal() {
+                passwordModal.style.display = 'none';
+            }
+
+            // Handle password verification
+            async function verifyPassword(password) {
+                try {
+                    const response = await fetch(`${apiUrl}/namespace/verify-password?namespace=${currentNamespaceId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ password }),
+                    });
+
+                    const result = await response.json();
+                    
+                    if (response.ok && result.verified) {
+                        namespacePasswordVerified = true;
+                        closePasswordModal();
+                        await loadLogos(); // Reload logos after verification
+                    } else {
+                        passwordModalError.textContent = result.message || 'Invalid password.';
+                    }
+                } catch (error) {
+                    console.error('Error verifying password:', error);
+                    passwordModalError.textContent = 'Failed to verify password.';
+                }
+            }
+
+            // Handle setting namespace password
+            async function handleSetPassword() {
+                if (!isAdmin || !currentAdminKey || !currentNamespaceId) return;
+
+                const password = setPasswordInput.value;
+                passwordStatus.textContent = 'Setting password...';
+                passwordStatus.className = 'text-sm text-blue-600';
+
+                try {
+                    const response = await fetch(`${apiUrl}/namespace/password?namespace=${currentNamespaceId}&admin=${currentAdminKey}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ password }),
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(result.message || 'Failed to set password.');
+                    }
+
+                    setPasswordInput.value = '';
+                    passwordStatus.textContent = result.message;
+                    passwordStatus.className = 'text-sm text-green-600';
+
+                    // Clear status after a delay
+                    setTimeout(() => {
+                        passwordStatus.textContent = result.isProtected ? 
+                            'Namespace is password protected.' : 
+                            'Namespace is not password protected.';
+                        passwordStatus.className = 'text-sm text-gray-600';
+                    }, 3000);
+
+                } catch (error) {
+                    console.error('Error setting password:', error);
+                    passwordStatus.textContent = `Error: ${error.message}`;
+                    passwordStatus.className = 'text-sm text-red-600';
+                }
+            }
 
         // --- Utility ---
         function setStatusMessage(message, isError = false) {
@@ -1197,6 +1330,16 @@
         }
         // --- END MODIFICATION ---
 
+            // Add event listeners for password functionality
+            submitPasswordBtn.addEventListener('click', () => verifyPassword(passwordInput.value));
+            setPasswordBtn.addEventListener('click', handleSetPassword);
+
+            // Handle Enter key in password input
+            passwordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    verifyPassword(passwordInput.value);
+                }
+            });
     </script>
 </body>
 </html>
