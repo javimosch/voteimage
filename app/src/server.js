@@ -20,6 +20,8 @@ const DATA_DIR = path.join(__dirname, '..', 'data');
 const NAMESPACES_DIR = path.join(DATA_DIR, 'namespaces');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 
+const { readNamespaceData, writeNamespaceData,getNamespaceFilePath } = require('./utils/dataHelpers');
+
 // --- Friendly URL Map ---
 let friendlyUrlToNamespaceIdMap = {};
 
@@ -104,33 +106,9 @@ const superadminAuthMiddleware = superadminUser && superadminPassword ? basicAut
 
 // --- Data Helper Functions ---
 // Get the path for a namespace's JSON file
-const getNamespaceFilePath = (namespaceId) => path.join(NAMESPACES_DIR, `${namespaceId}.json`);
 
-// Read namespace data
-async function readNamespaceData(namespaceId) {
-    const filePath = getNamespaceFilePath(namespaceId);
-    try {
-        const data = await fs.readFile(filePath, 'utf-8');
-        return JSON.parse(data);
-    } catch (error) {
-        if (error.code === 'ENOENT') {
-            return null; // Namespace file doesn't exist
-        }
-        console.error(`Error reading namespace ${namespaceId}:`, error);
-        throw new Error('Could not read namespace data.');
-    }
-}
 
-// Write namespace data
-async function writeNamespaceData(namespaceId, data) {
-    const filePath = getNamespaceFilePath(namespaceId);
-    try {
-        await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
-    } catch (error) {
-        console.error(`Error writing namespace ${namespaceId}:`, error);
-        throw new Error('Could not write namespace data.');
-    }
-}
+
 
 // Validate admin key
 async function validateAdminKey(namespaceId, adminKey) {
@@ -430,110 +408,9 @@ app.get('/logos', async (req, res) => {
     }
 });
 
-// POST /upload?namespace=[id] - Upload one or more logos
-app.post('/upload', (req, res) => {
-    upload(req, res, async (err) => {
-        const { namespace } = req.query;
-
-        if (!namespace) {
-            if (req.files && req.files.length > 0) {
-                 console.log('Namespace missing, cleaning up uploaded files...');
-                 await Promise.all(req.files.map(file => fs.unlink(file.path).catch(console.error)));
-            }
-            return res.status(400).json({ message: 'Namespace ID is required.' });
-        }
-
-        if (err instanceof multer.MulterError) {
-            console.error('Multer error:', err);
-            return res.status(400).json({ message: `Upload error: ${err.message}` });
-        } else if (err) {
-            console.error('Unknown upload error:', err);
-            if (err.message.startsWith('Error: File upload only supports')) {
-                 return res.status(400).json({ message: err.message });
-            }
-            return res.status(500).json({ message: `Upload error: ${err.message}` });
-        }
-
-        if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ message: 'No files uploaded or invalid file types.' });
-        }
-
-        let data;
-        try {
-            data = await readNamespaceData(namespace);
-            if (!data) {
-                console.log(`Namespace ${namespace} not found, cleaning up uploaded files...`);
-                await Promise.all(req.files.map(file => fs.unlink(file.path).catch(console.error)));
-                return res.status(404).json({ message: 'Namespace not found.' });
-            }
-        } catch (readError) {
-             console.error(`Error reading namespace ${namespace} before processing uploads:`, readError);
-             await Promise.all(req.files.map(file => fs.unlink(file.path).catch(console.error)));
-             return res.status(500).json({ message: 'Failed to read namespace data.' });
-        }
-
-        const uploadedLogos = [];
-        const errors = [];
-
-        for (const file of req.files) {
-            try {
-                const logoId = uuidv4();
-                const relativePath = path.join(namespace, file.filename);
-
-                const newLogo = {
-                    id: logoId,
-                    path: relativePath,
-                    votes: [],
-                    description: "" // Initialize description as empty
-                };
-
-                data.logos.push(newLogo);
-
-                uploadedLogos.push({
-                    originalName: file.originalname,
-                    logoId: logoId,
-                    path: `/data/uploads/${relativePath}`
-                });
-                 console.log(`Logo ${logoId} (${file.originalname}) staged for namespace ${namespace}`);
-
-            } catch (processingError) {
-                console.error(`Error processing file ${file.originalname}:`, processingError);
-                errors.push({ originalName: file.originalname, message: 'Failed to process file data.' });
-                await fs.unlink(file.path).catch(console.error);
-            }
-        }
-
-        try {
-            if (uploadedLogos.length > 0) {
-                 await writeNamespaceData(namespace, data);
-                 console.log(`Successfully processed and saved ${uploadedLogos.length} logos for namespace ${namespace}.`);
-            } else {
-                 console.log(`No logos successfully processed for namespace ${namespace}.`);
-            }
-
-            if (errors.length === 0) {
-                res.status(201).json({
-                    message: `${uploadedLogos.length} file(s) uploaded successfully.`,
-                    uploadedLogos: uploadedLogos
-                });
-            } else if (uploadedLogos.length > 0) {
-                 res.status(207).json({
-                     message: `Processed ${req.files.length} files. ${uploadedLogos.length} succeeded, ${errors.length} failed.`,
-                     uploadedLogos: uploadedLogos,
-                     errors: errors
-                 });
-            } else {
-                 res.status(500).json({
-                     message: `All ${errors.length} files failed during processing.`,
-                     errors: errors
-                 });
-            }
-        } catch (writeError) {
-            console.error(`Error writing namespace data for ${namespace} after processing uploads:`, writeError);
-            res.status(500).json({ message: 'Failed to save uploaded file data. Server error.' });
-        }
-    });
-});
+// Import upload routes
+const uploadsRouter = require('./routes/uploads');
+app.use('/upload', uploadsRouter);
 
 // POST /vote?namespace=[id] - Vote for a logo
 app.post('/vote', async (req, res) => {
