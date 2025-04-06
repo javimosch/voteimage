@@ -1,117 +1,168 @@
-# Vote Namespace Password Protection Feature Specification
+# Namespace Password Protection Feature
 
 ## Overview
-Add password protection capability for vote namespaces to enhance security. Only namespace admins can set/change passwords.
 
-## Implementation Steps
+Optional password protection for namespaces to restrict access to voting and logo viewing. When enabled, users must enter the correct password to view or interact with the namespace.
 
-### Frontend Changes (index.html)
-1. Add Password Management section in admin controls:
-```html
-<div class="mt-6 space-y-4">
-  <h3 class="font-semibold text-lg" data-i18n="passwordControls">Password Protection</h3>
-  <div>
-    <label for="password-input" class="block text-sm font-medium text-gray-700 mb-1">
-      <span data-i18n="setPasswordLabel">Set New Password:</span>
-    </label>
-    <div class="flex flex-col space-y-2">
-      <input type="password" id="password-input" 
-             class="w-full p-2 border border-gray-300 rounded"
-             data-i18n-placeholder="newPasswordPlaceholder" 
-             placeholder="New password">
-      <input type="password" id="password-confirm-input"
-             class="w-full p-2 border border-gray-300 rounded"
-             data-i18n-placeholder="confirmPasswordPlaceholder"
-             placeholder="Confirm password">
-      <button id="set-password-btn" 
-              class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
-              data-i18n="setPasswordBtn">
-        Set Password
-      </button>
-    </div>
-    <p id="password-status" class="mt-1 text-sm">
-      <span data-i18n="currentPasswordStatus">Status:</span>
-      <span id="password-status-value" class="font-medium">Not set</span>
-    </p>
-  </div>
-</div>
-```
+## Feature Details
 
-### Backend Changes (server.js)
-1. Add password hash field to namespace schema:
-```javascript
-// In namespace data structure
-{
-  adminKey: string,
-  passwordHash?: string,
-  // ...existing fields
+### Password Setup
+
+- Optional feature enabled by admin
+- Set during namespace creation or later via admin controls
+- Password stored securely (hashed)
+- Can be updated or removed by admin
+- Minimum password requirements:
+  - 6 characters minimum
+  - No maximum length
+  - Any characters allowed
+
+### User Experience
+
+1. **Accessing Protected Namespace**
+   - User visits namespace URL
+   - Presented with password entry screen
+   - Cannot view logos or vote until correct password entered
+   - Password valid for current browser session
+
+2. **Password Entry**
+   - Clean, simple interface
+   - Error messages for incorrect attempts
+   - No limit on attempts
+   - "Remember me" option (30-day cookie)
+
+### API Endpoints
+
+```typescript
+// Set/Update Password
+POST /namespace/password
+Query: namespace, admin
+Body: { password: string | null }
+Response: { message: string }
+
+// Verify Password
+POST /namespace/verify-password
+Query: namespace
+Body: { password: string, remember?: boolean }
+Response: { 
+  valid: boolean,
+  token?: string, // JWT for session
+  message: string 
 }
 ```
 
-2. Create password endpoints:
-```javascript
-// POST /namespace/password - Set/update password
-app.post('/namespace/password', async (req, res) => {
-  const { namespace, admin } = req.query;
-  const { password } = req.body;
+### Security Considerations
 
-  // Validation logic
-  if (!(await validateAdminKey(namespace, admin))) {
-    return res.status(403).json({ message: 'Invalid admin key' });
-  }
+1. **Password Storage**
+   - Passwords hashed using bcrypt
+   - Salt automatically generated
+   - No plaintext storage
 
-  if (!password || password.length < 8) {
-    return res.status(400).json({ message: 'Password must be 8+ characters' });
-  }
+2. **Session Management**
+   - JWT tokens for verified sessions
+   - 24-hour expiry (session)
+   - 30-day expiry (remember me)
+   - Secure cookie flags
 
-  // Hash password
-  const hash = await bcrypt.hash(password, 10);
-  
-  // Update namespace data
-  const data = await readNamespaceData(namespace);
-  data.passwordHash = hash;
-  await writeNamespaceData(namespace, data);
+3. **Rate Limiting**
+   - Per-IP rate limiting on verify endpoint
+   - Exponential backoff for repeated failures
 
-  res.json({ message: 'Password updated successfully' });
-});
+### Implementation Notes
 
-// Middleware for password protected endpoints
-const checkNamespacePassword = async (req, res, next) => {
-  const { namespace } = req.query;
-  const { password } = req.body;
-  
-  const data = await readNamespaceData(namespace);
-  if (data?.passwordHash) {
-    if (!password || !(await bcrypt.compare(password, data.passwordHash))) {
-      return res.status(401).json({ message: 'Invalid password' });
-    }
-  }
-  next();
-};
+1. **Database Changes**
+```json
+{
+  "namespaceId": "...",
+  "adminKey": "...",
+  "passwordHash": null,  // Optional, bcrypt hash
+  "passwordEnabled": false,
+  // ... existing fields ...
+}
 ```
 
-## Security Requirements
-1. Passwords must be:
-   - Minimum 8 characters
-   - Stored as bcrypt hashes
-   - Required for sensitive operations if set
-2. Add rate limiting for password attempts
-3. Enforce HTTPS for password transmissions
+2. **Frontend Changes**
+   - Add password modal component
+   - Add password toggle in admin controls
+   - Update namespace initialization flow
+   - Add session management
+   - Add "protected" indicator to UI
+
+3. **Backend Changes**
+   - Add password endpoints
+   - Add session verification middleware
+   - Update existing endpoints to check protection
+   - Add rate limiting middleware
+
+### Error Handling
+
+1. **API Errors**
+   - 401: Invalid password
+   - 403: Password required
+   - 429: Too many attempts
+   - 400: Invalid password format
+
+2. **User Feedback**
+   - Clear error messages
+   - Password requirements shown
+   - Session expiry warnings
+   - Automatic re-authentication
 
 ## Testing Plan
-1. Verify password setup flow
-2. Test access control for password-protected namespaces
-3. Validate error cases:
-   - Incorrect password
-   - Weak password
-   - Unauthorized admin attempts
 
-## Documentation
-1. Update README with new security features
-2. Add password management section to user guide
-3. Document API endpoints for password operations
+1. **Unit Tests**
+   - Password hashing
+   - Token generation/validation
+   - Rate limiting logic
+   - Session management
 
-## Rollout Strategy
-1. Phase 1: Development & Testing (2 weeks)
-2. Phase 2: Staging Environment Validation (1 week)
-3. Phase 3: Gradual Production Rollout
+2. **Integration Tests**
+   - Password protection flow
+   - Session persistence
+   - Rate limiting behavior
+   - Admin operations
+
+3. **Manual Test Cases**
+   - Enable/disable protection
+   - Password update flow
+   - Session expiry handling
+   - Remember me functionality
+
+## Future Enhancements
+
+1. **Possible Extensions**
+   - Multiple access levels
+   - Temporary access codes
+   - Password recovery options
+   - Access logs for admins
+
+2. **Performance Optimizations**
+   - Cache verified sessions
+   - Batch token validation
+   - Distributed rate limiting
+
+## Migration Plan
+
+1. **Database Updates**
+   - Add new fields (nullable)
+   - No breaking changes
+   - Default to unprotected
+
+2. **API Version**
+   - No version bump needed
+   - Backward compatible
+   - Progressive enhancement
+
+## Documentation Updates
+
+1. **Admin Guide**
+   - Password best practices
+   - Protection management
+   - Session handling
+   - Troubleshooting
+
+2. **User Guide**
+   - Accessing protected spaces
+   - Session management
+   - Browser compatibility
+   - Common issues
