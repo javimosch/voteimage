@@ -1,168 +1,115 @@
-# Namespace Password Protection Feature
+# Vote Namespace Password Protection Feature Specification
 
 ## Overview
+Enable admins to set passwords for vote namespaces to restrict access to authorized users only.
 
-Optional password protection for namespaces to restrict access to voting and logo viewing. When enabled, users must enter the correct password to view or interact with the namespace.
+## Implementation Steps
 
-## Feature Details
-
-### Password Setup
-
-- Optional feature enabled by admin
-- Set during namespace creation or later via admin controls
-- Password stored securely (hashed)
-- Can be updated or removed by admin
-- Minimum password requirements:
-  - 6 characters minimum
-  - No maximum length
-  - Any characters allowed
-
-### User Experience
-
-1. **Accessing Protected Namespace**
-   - User visits namespace URL
-   - Presented with password entry screen
-   - Cannot view logos or vote until correct password entered
-   - Password valid for current browser session
-
-2. **Password Entry**
-   - Clean, simple interface
-   - Error messages for incorrect attempts
-   - No limit on attempts
-   - "Remember me" option (30-day cookie)
-
-### API Endpoints
-
-```typescript
-// Set/Update Password
-POST /namespace/password
-Query: namespace, admin
-Body: { password: string | null }
-Response: { message: string }
-
-// Verify Password
-POST /namespace/verify-password
-Query: namespace
-Body: { password: string, remember?: boolean }
-Response: { 
-  valid: boolean,
-  token?: string, // JWT for session
-  message: string 
-}
+### Frontend Changes (index.html)
+1. Add password controls to admin section:
+```html
+<div class="mt-6 space-y-4">
+  <h3 class="font-semibold text-lg" data-i18n="passwordControls">Password Protection</h3>
+  <div>
+    <label for="password-input" class="block text-sm font-medium text-gray-700 mb-1">
+      <span data-i18n="passwordLabel">Set Password:</span>
+    </label>
+    <input 
+      type="password"
+      id="password-input"
+      class="w-full p-2 border border-gray-300 rounded"
+      data-i18n-placeholder="passwordPlaceholder"
+      placeholder="Enter password..."
+    >
+    <button 
+      id="set-password-btn"
+      class="mt-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+      data-i18n="setPasswordBtn"
+    >
+      Set Password
+    </button>
+    <p id="password-status" class="mt-1 text-sm text-gray-600">
+      <span data-i18n="passwordStatus">Status:</span>
+      <span id="password-status-text">Not set</span>
+    </p>
+  </div>
+</div>
 ```
 
-### Security Considerations
-
-1. **Password Storage**
-   - Passwords hashed using bcrypt
-   - Salt automatically generated
-   - No plaintext storage
-
-2. **Session Management**
-   - JWT tokens for verified sessions
-   - 24-hour expiry (session)
-   - 30-day expiry (remember me)
-   - Secure cookie flags
-
-3. **Rate Limiting**
-   - Per-IP rate limiting on verify endpoint
-   - Exponential backoff for repeated failures
-
-### Implementation Notes
-
-1. **Database Changes**
-```json
+### Backend Changes (server.js)
+1. Add password field to namespace schema:
+```javascript
+// In namespace data structure
 {
-  "namespaceId": "...",
-  "adminKey": "...",
-  "passwordHash": null,  // Optional, bcrypt hash
-  "passwordEnabled": false,
-  // ... existing fields ...
+  adminKey: string,
+  password: string | null, // Hashed password
+  // ...existing fields
 }
 ```
 
-2. **Frontend Changes**
-   - Add password modal component
-   - Add password toggle in admin controls
-   - Update namespace initialization flow
-   - Add session management
-   - Add "protected" indicator to UI
+2. Create password management endpoint:
+```javascript
+// POST /namespace/password - Set namespace password
+app.post('/namespace/password', async (req, res) => {
+  const { namespace, admin } = req.query;
+  const { password } = req.body;
 
-3. **Backend Changes**
-   - Add password endpoints
-   - Add session verification middleware
-   - Update existing endpoints to check protection
-   - Add rate limiting middleware
+  if (!(await validateAdminKey(namespace, admin))) {
+    return res.status(403).json({ message: 'Invalid admin key' });
+  }
 
-### Error Handling
+  const data = await readNamespaceData(namespace);
+  data.password = password ? await bcrypt.hash(password, 10) : null;
+  await writeNamespaceData(namespace, data);
 
-1. **API Errors**
-   - 401: Invalid password
-   - 403: Password required
-   - 429: Too many attempts
-   - 400: Invalid password format
+  res.json({ message: 'Password updated successfully' });
+});
+```
 
-2. **User Feedback**
-   - Clear error messages
-   - Password requirements shown
-   - Session expiry warnings
-   - Automatic re-authentication
+3. Add password verification middleware:
+```javascript
+async function verifyNamespacePassword(namespaceId, password) {
+  const data = await readNamespaceData(namespaceId);
+  if (!data.password) return true; // No password set
+  if (!password) return false;
+  return await bcrypt.compare(password, data.password);
+}
+```
+
+## Validation Requirements
+1. Password must be:
+   - Minimum 8 characters
+   - Maximum 64 characters
+   - Optional (can be cleared)
+   - Stored hashed (bcrypt)
+
+## Access Control Flow
+1. If namespace has password:
+   - Show password prompt modal
+   - Store verified password in sessionStorage
+   - Verify password on each request
 
 ## Testing Plan
+1. Test password creation/removal
+2. Verify password complexity requirements
+3. Test session persistence
+4. Validate brute force protection
 
-1. **Unit Tests**
-   - Password hashing
-   - Token generation/validation
-   - Rate limiting logic
-   - Session management
+## Documentation
+1. Add password field to API docs
+2. Update admin security guide
+3. Include in namespace examples
 
-2. **Integration Tests**
-   - Password protection flow
-   - Session persistence
-   - Rate limiting behavior
-   - Admin operations
-
-3. **Manual Test Cases**
-   - Enable/disable protection
-   - Password update flow
-   - Session expiry handling
-   - Remember me functionality
-
-## Future Enhancements
-
-1. **Possible Extensions**
-   - Multiple access levels
-   - Temporary access codes
-   - Password recovery options
-   - Access logs for admins
-
-2. **Performance Optimizations**
-   - Cache verified sessions
-   - Batch token validation
-   - Distributed rate limiting
-
-## Migration Plan
-
-1. **Database Updates**
-   - Add new fields (nullable)
-   - No breaking changes
-   - Default to unprotected
-
-2. **API Version**
-   - No version bump needed
-   - Backward compatible
-   - Progressive enhancement
-
-## Documentation Updates
-
-1. **Admin Guide**
-   - Password best practices
-   - Protection management
-   - Session handling
-   - Troubleshooting
-
-2. **User Guide**
-   - Accessing protected spaces
-   - Session management
-   - Browser compatibility
-   - Common issues
+## Localization
+1. Add new i18n keys:
+```json
+{
+  "passwordControls": "Password Protection",
+  "passwordLabel": "Set Password:",
+  "passwordPlaceholder": "Enter password...",
+  "setPasswordBtn": "Set Password",
+  "passwordStatus": "Status:",
+  "passwordPrompt": "This namespace requires a password:",
+  "passwordSubmit": "Submit",
+  "passwordError": "Incorrect password"
+}
