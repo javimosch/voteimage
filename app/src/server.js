@@ -1026,11 +1026,27 @@ app.get('/v/:friendlyUrlName', (req, res) => {
 // --- Serve index.html at root ---
 const DEFAULT_LANG = process.env.DEFAULT_LANG || 'fr'; // Default to French if not set
 app.get('/', async (req, res) => {
-    res.setHeader('X-Default-Lang', DEFAULT_LANG);
-    const appName = process.env.APP_NAME || 'VoteImage';
-    //read file and inject $appName
-    const html = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
-    res.send(html.split('$appName').join(appName));
+    try {
+        res.setHeader('X-Default-Lang', DEFAULT_LANG);
+        const appName = process.env.APP_NAME || 'VoteImage';
+        const mainUiDir = path.join(UI_SRC_DIR, 'main');
+
+        // Compile the virtual file
+        const compiledHtml = await compileVirtualFile(mainUiDir);
+
+        // Inject variables
+        const finalHtml = compiledHtml.replace(/\$appName/g, appName); // Use regex with global flag
+
+        res.setHeader('Content-Type', 'text/html');
+        res.send(finalHtml);
+    } catch (error) {
+        console.error("Error compiling or serving /:", error);
+        if (error.message.includes('Virtual file directory not found')) {
+            res.status(404).send(`Main UI not found at ${error.message.split(': ')[1]}`);
+        } else {
+            res.status(500).send('Error generating main interface.');
+        }
+    }
 });
 
 // --- Server Start ---

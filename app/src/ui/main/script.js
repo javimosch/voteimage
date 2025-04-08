@@ -1,0 +1,1141 @@
+let isAdmin = false;
+
+        // --- I18N START ---
+        const supportedLanguages = ['en', 'fr'];
+        let currentLanguage = 'en';
+        let translations = {};
+
+        async function getDefaultLanguage() {
+            try {
+                // Get default language from server response headers
+                const response = await fetch(window.location.pathname);
+                const defaultLang = response.headers.get('X-Default-Lang') || 'fr';
+                return defaultLang;
+            } catch (error) {
+                console.warn('Could not fetch default language:', error);
+                return 'fr'; // Fallback to French
+            }
+        }
+
+        function getPreferredLanguage() {
+            // Check localStorage first
+            const storedLang = localStorage.getItem('preferredLanguage');
+            if (storedLang && supportedLanguages.includes(storedLang)) {
+                return storedLang;
+            }
+
+            // Then check browser language
+            const browserLang = navigator.language.split('-')[0];
+            if (supportedLanguages.includes(browserLang)) {
+                return browserLang;
+            }
+
+            // Return default (will be set during initialization)
+            return currentLanguage;
+        }
+
+        function updateLanguageSwitcher() {
+            document.querySelectorAll('.lang-switcher a').forEach(a => {
+                const lang = a.id.split('-')[1];
+                if (lang === currentLanguage) {
+                    a.classList.add('active');
+                } else {
+                    a.classList.remove('active');
+                }
+                // Add aria attributes for accessibility
+                a.setAttribute('aria-pressed', lang === currentLanguage);
+                a.setAttribute('role', 'button');
+            });
+            // Update HTML lang attribute
+            document.documentElement.lang = currentLanguage;
+        }
+
+        async function loadTranslations(lang) {
+            try {
+                // --- MODIFICATION: Use absolute path ---
+                const response = await fetch(`/locales/${lang}.json`);
+                // --- END MODIFICATION ---
+                if (!response.ok) {
+                    throw new Error(`Could not load ${lang}.json`);
+                }
+                translations = await response.json();
+                console.log(`Translations loaded for ${lang}`);
+            } catch (error) {
+                console.error('Error loading translations:', error);
+                // Fallback to English if the requested language fails, unless English itself failed
+                if (lang !== 'en') {
+                    console.warn(`Falling back to English translations.`);
+                    await loadTranslations('en');
+                } else {
+                    // If English fails, use keys as fallback
+                    translations = {};
+                }
+            }
+        }
+
+        function updateCharacterCount() {
+            const count = descriptionInput.value.length;
+            characterCountSpan.textContent = count;
+        }
+
+        function t(key, params = {}) {
+            let translation = translations[key] || key; // Fallback to key if not found
+            for (const param in params) {
+                translation = translation.replace(`{${param}}`, params[param]);
+            }
+            return translation;
+        }
+
+        function translatePage() {
+            // Translate elements with data-i18n attribute
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                element.textContent = t(key);
+            });
+            // Translate placeholders
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+                const key = element.getAttribute('data-i18n-placeholder');
+                element.placeholder = t(key);
+            });
+            // Translate titles (tooltips)
+            document.querySelectorAll('[data-i18n-title]').forEach(element => {
+                const key = element.getAttribute('data-i18n-title');
+                element.title = t(key);
+            });
+            // Translate elements with data-i18n-base (used for dynamic text like friendly URL status)
+            document.querySelectorAll('[data-i18n-base]').forEach(element => {
+                const key = element.getAttribute('data-i18n-base');
+                const span = element.querySelector('span'); // Find the inner span to update
+                if (span) {
+                    // Reconstruct the text using the translated base and the existing span content
+                    const baseText = t(key, { url: '' }).replace('{url}', ''); // Get base text without placeholder
+                    element.textContent = baseText; // Set base text first
+                    element.appendChild(span); // Re-append the span
+                } else {
+                    element.textContent = t(key);
+                }
+            });
+
+            // Update language switcher active state
+            document.querySelectorAll('.lang-switcher a').forEach(a => {
+                a.classList.remove('active');
+            });
+            const activeLink = document.getElementById(`lang-${currentLanguage}`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+            // Update HTML lang attribute
+            document.documentElement.lang = currentLanguage;
+        }
+
+        async function setLanguage(lang) {
+            if (!supportedLanguages.includes(lang)) {
+                console.warn(`Unsupported language: ${lang}`);
+                return;
+            }
+            currentLanguage = lang;
+            localStorage.setItem('preferredLanguage', lang);
+            await loadTranslations(lang);
+            translatePage();
+            updateLanguageSwitcher(); // Make sure to call this after changing language
+
+            if (currentNamespaceId) {
+                await loadLogos();
+                const currentStatusText = statusMessage.textContent;
+                if (currentStatusText) {
+                    console.warn("Status message might not be re-translated automatically on language change.");
+                }
+            }
+        }
+
+        async function handleSaveNamespaceDescription() {
+            try {
+                const description = descriptionInput.value.trim();
+                const response = await fetch(`/namespace/description?namespace=${currentNamespaceId}&admin=${currentAdminKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ description }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save namespace description');
+                }
+
+                const data = await response.json();
+                descriptionSaveStatus.textContent = t('statusDescriptionSaved');
+                setTimeout(() => {
+                    descriptionSaveStatus.textContent = '';
+                }, 3000);
+            } catch (error) {
+                console.error('Error saving namespace description:', error);
+                descriptionSaveStatus.textContent = t('statusDescriptionSaveError');
+                setTimeout(() => {
+                    descriptionSaveStatus.textContent = '';
+                }, 3000);
+            }
+        }
+
+        // --- I18N END ---
+        const apiUrl = ''; // Assuming backend is running on the same origin
+        const logoGrid = document.getElementById('logo-grid');
+        const uploadForm = document.getElementById('upload-form');
+        const logoFileInput = document.getElementById('logo-file-input');
+        const uploadStatus = document.getElementById('upload-status');
+        const createNamespaceBtn = document.getElementById('create-namespace-btn');
+        const namespaceInfoDiv = document.getElementById('namespace-info');
+        const currentNamespaceIdP = document.getElementById('current-namespace-id');
+        const uploadSection = document.getElementById('upload-section');
+        const logoGridSection = document.getElementById('logo-grid-section');
+        const createNamespaceSection = document.getElementById('create-namespace-section');
+        const welcomeMessage = document.getElementById('welcome-message');
+        const noLogosMessage = document.getElementById('no-logos-message');
+        const statusMessage = document.getElementById('status-message');
+        const adminControlsSection = document.getElementById('admin-controls-section');
+        const clearVotesBtn = document.getElementById('clear-votes-btn');
+        const deleteNamespaceBtn = document.getElementById('delete-namespace-btn');
+        const namespaceLinksDiv = document.getElementById('namespace-links');
+        const votingLinkA = document.getElementById('voting-link');
+        const adminLinkA = document.getElementById('admin-link');
+        const friendlyUrlInput = document.getElementById('friendly-url-input');
+        const setFriendlyUrlBtn = document.getElementById('set-friendly-url-btn');
+        const friendlyUrlStatus = document.getElementById('friendly-url-status');
+        const currentFriendlyUrlSpan = document.getElementById('current-friendly-url');
+        const friendlyLinkP = document.getElementById('friendly-link-p');
+        const friendlyLinkA = document.getElementById('friendly-link');
+
+        // Modal elements
+        const identifierModal = document.getElementById('identifier-modal');
+        const identifierInput = document.getElementById('identifier-input');
+        const submitIdentifierBtn = document.getElementById('submit-identifier-btn');
+        const modalError = document.getElementById('modal-error');
+        let currentLogoIdToVote = null; // Store logo ID when modal opens
+
+        // Logo Viewer Modal elements
+        const logoViewerModal = document.getElementById('logo-viewer-modal');
+        const logoViewerImg = document.getElementById('logo-viewer-img');
+        const logoViewerCloseBtn = document.getElementById('logo-viewer-close-btn');
+        const logoViewerPrevBtn = document.getElementById('logo-viewer-prev');
+        const logoViewerNextBtn = document.getElementById('logo-viewer-next');
+        const logoViewerVoteBtn = document.getElementById('logo-viewer-vote-btn');
+        // === NEW: Namespace Description Elements ===
+        const namespaceDescriptionDisplaySection = document.getElementById('namespace-description-display-section');
+        const namespaceDescriptionText = document.getElementById('namespace-description-text');
+        const descriptionControls = document.getElementById('description-controls'); // Admin section
+        const descriptionInput = document.getElementById('description-input');
+        const saveDescriptionBtn = document.getElementById('save-description-btn');
+        const characterCountSpan = document.getElementById('character-count');
+        const descriptionSaveStatus = document.getElementById('description-save-status');
+        // === END NEW ===
+        // Password protection variables
+        const passwordModal = document.getElementById('password-modal');
+        const passwordInput = document.getElementById('password-input');
+        const submitPasswordBtn = document.getElementById('submit-password-btn');
+        const passwordModalError = document.getElementById('password-modal-error');
+        const passwordControls = document.getElementById('password-controls');
+        const setPasswordInput = document.getElementById('set-password-input');
+        const setPasswordBtn = document.getElementById('set-password-btn');
+        const passwordStatus = document.getElementById('password-status');
+        let namespacePasswordVerified = false;
+
+        // Initialize password controls - they're already in the DOM
+        // Just need to show/hide based on admin status
+
+        let currentNamespaceId = null;
+        let currentAdminKey = null;
+
+        let displayedLogos = []; // To store the current list of logos
+        let currentLogoIndex = -1; // Index of the logo currently shown in the viewer
+        let currentFriendlyUrlName = null; // Store current friendly name
+        let saveDescriptionDebounceTimers = {}; // Store debounce timers for description saving
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', async () => { // Make async
+            // --- I18N START ---
+            // Set default language first
+            currentLanguage = await getDefaultLanguage();
+
+            // Then check for user preference
+            const preferredLang = getPreferredLanguage();
+            if (preferredLang !== currentLanguage) {
+                currentLanguage = preferredLang;
+            }
+
+            await loadTranslations(currentLanguage);
+            translatePage();
+            updateLanguageSwitcher(); // Make sure this is called after setting the language
+
+            // Attach language switcher listeners
+            document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
+            document.getElementById('lang-fr').addEventListener('click', () => setLanguage('fr'));
+            // --- I18N END ---
+
+            const urlParams = new URLSearchParams(window.location.search);
+            currentNamespaceId = urlParams.get('namespace');
+            currentAdminKey = urlParams.get('admin'); // Might be null
+
+            if (currentNamespaceId) {
+                initializeNamespaceView();
+            } else {
+                showWelcomeView();
+            }
+
+            createNamespaceBtn.addEventListener('click', handleCreateNamespace);
+            uploadForm.addEventListener('submit', handleUpload);
+            submitIdentifierBtn.addEventListener('click', handleSubmitIdentifier);
+            clearVotesBtn.addEventListener('click', handleClearVotes);
+            deleteNamespaceBtn.addEventListener('click', handleDeleteNamespace);
+            logoViewerCloseBtn.addEventListener('click', closeLogoViewer);
+            logoViewerPrevBtn.addEventListener('click', showPreviousLogo);
+            logoViewerNextBtn.addEventListener('click', showNextLogo);
+            logoViewerVoteBtn.addEventListener('click', handleModalVoteClick);
+            logoViewerModal.addEventListener('click', (event) => {
+                if (event.target === logoViewerModal) {
+                    closeLogoViewer();
+                }
+            });
+            document.addEventListener('keydown', handleKeydown);
+            setFriendlyUrlBtn.addEventListener('click', handleSetFriendlyUrl); // Add listener
+
+            // === NEW: Add Description Listeners ===
+            saveDescriptionBtn.addEventListener('click', handleSaveNamespaceDescription);
+            descriptionInput.addEventListener('input', updateCharacterCount);
+            // === END NEW ===
+        });
+
+        function showWelcomeView() {
+            namespaceInfoDiv.style.display = 'none';
+            uploadSection.style.display = 'none';
+            logoGridSection.style.display = 'none';
+            createNamespaceSection.style.display = 'block';
+            welcomeMessage.style.display = 'block';
+            // --- I18N: Translate static elements shown in this view ---
+            translatePage();
+            // --- END I18N ---
+        }
+
+        async function initializeNamespaceView() {
+            // --- I18N: Translate static elements shown in this view ---
+            // Note: Dynamic text like namespace ID is set below,
+            // and fetched data (logos) will be translated after fetch.
+            translatePage();
+            // --- END I18N ---
+
+            currentNamespaceIdP.textContent = `Namespace ID: ${currentNamespaceId}`; // Keep this non-translated
+            namespaceInfoDiv.style.display = 'block';
+            uploadSection.style.display = 'block';
+            logoGridSection.style.display = 'block';
+            createNamespaceSection.style.display = 'none'; // Hide creation button
+            welcomeMessage.style.display = 'none';
+
+            // Check if admin key is present and potentially valid (backend confirms)
+            isAdmin = !!currentAdminKey; // Assume admin if key exists, backend verifies actions
+            if (isAdmin) {
+                adminControlsSection.style.display = 'block';
+                // Show password controls for admin
+                passwordControls.style.display = 'block';
+                // --- MODIFICATION START ---
+                // Show links if admin key is present in URL
+                const baseUrl = window.location.origin + window.location.pathname;
+                const votingUrl = `${baseUrl}?namespace=${currentNamespaceId}`;
+                const adminUrl = `${baseUrl}?namespace=${currentNamespaceId}&admin=${currentAdminKey}`;
+
+                votingLinkA.href = votingUrl;
+                votingLinkA.textContent = votingUrl;
+                adminLinkA.href = adminUrl;
+                adminLinkA.textContent = adminUrl;
+                namespaceLinksDiv.style.display = 'block';
+                // --- MODIFICATION END ---
+            } else {
+                adminControlsSection.style.display = 'none';
+                // Hide password controls for non-admin
+                passwordControls.style.display = 'none';
+                // Hide links if not admin
+                namespaceLinksDiv.style.display = 'none'; // Keep this line for non-admin view
+            }
+            // namespaceLinksDiv.style.display = 'none'; // Hide links initially // REMOVED this line as logic is handled above
+
+            await loadLogos(); // This will update currentFriendlyUrlName via processLogosResponse
+        }
+
+        // --- API Interaction ---
+
+        async function fetchLogos(namespaceId) {
+            try {
+                const response = await fetch(`${apiUrl}/logos?namespace=${namespaceId}`);
+                if (!response.ok) {
+                    // Handle 404 specifically for namespace not found
+                    if (response.status === 404) {
+                        // --- I18N: Use translation key ---
+                        setStatusMessage('statusNamespaceNotFound', true);
+                        showWelcomeView(); // Go back to welcome if namespace invalid
+                        return null; // Indicate failure clearly
+                    }
+                    throw new Error(`Failed to fetch logos: ${response.statusText}`);
+                }
+                return await response.json(); // Returns { logos: [], friendlyUrlName: "..." }
+            } catch (error) {
+                console.error('Error fetching logos:', error);
+                // --- I18N: Use translation key ---
+                setStatusMessage('statusError', true, { message: `loading logos: ${error.message}` });
+                return null; // Indicate failure
+            }
+        }
+
+        async function loadLogos() {
+            if (!currentNamespaceId) return;
+            setStatusMessage('Loading logos...', false);
+            logoGrid.innerHTML = '';
+            noLogosMessage.style.display = 'none';
+            displayedLogos = [];
+
+            try {
+                const response = await fetch(`${apiUrl}/logos?namespace=${currentNamespaceId}`);
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        setStatusMessage('Namespace not found.', true);
+                        showWelcomeView();
+                        return;
+                    }
+                    throw new Error(`Failed to fetch logos: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                // Check if namespace is password protected and not yet verified
+                if (data.isPasswordProtected && !namespacePasswordVerified && !isAdmin) {
+                    openPasswordModal();
+                    return;
+                }
+
+                processLogosResponse(data);
+            } catch (error) {
+                console.error('Error loading logos:', error);
+                setStatusMessage(`Error: ${error.message}`, true);
+            }
+        }
+
+        function createLogoElement(logo, index) { // Accept index
+            const div = document.createElement('div');
+            div.className = 'bg-white p-3 md:p-4 rounded-lg shadow hover:shadow-lg transition-shadow duration-200 ease-in-out relative flex flex-col';
+
+            const img = document.createElement('img');
+            const imgSrc = `${apiUrl}/data/uploads/${logo.path}`;
+            img.src = imgSrc;
+            img.alt = 'Logo Thumbnail';
+            img.className = 'w-full h-32 md:h-40 object-contain mb-2 md:mb-3 cursor-pointer';
+            img.onclick = () => openLogoViewer(index); // Pass index to openLogoViewer
+
+            const voteCount = document.createElement('p');
+            voteCount.textContent = `Votes: ${logo.votes}`;
+            voteCount.className = 'text-center text-base md:text-lg font-semibold mb-1 md:mb-2';
+            voteCount.id = `votes-${logo.id}`;
+
+            // --- MODIFICATION: Add Description Display/Edit ---
+            const descriptionContainer = document.createElement('div');
+            descriptionContainer.className = 'mt-1 mb-2 md:mb-3 flex-grow';
+
+            const descriptionDisplay = document.createElement('p');
+            descriptionDisplay.id = `desc-display-${logo.id}`;
+            descriptionDisplay.textContent = logo.description || 'No description yet.'; // Display current description
+            descriptionDisplay.className = `text-sm text-gray-600 ${isAdmin ? 'hidden' : ''}`; // Hide if admin
+
+            descriptionContainer.appendChild(descriptionDisplay);
+
+            if (isAdmin) {
+                const descriptionInput = document.createElement('textarea'); // Use textarea for potentially longer text
+                descriptionInput.id = `desc-input-${logo.id}`;
+                descriptionInput.value = logo.description || '';
+                descriptionInput.placeholder = "Enter description...";
+                descriptionInput.rows = 2; // Start with 2 rows
+                descriptionInput.className = 'w-full p-1 border border-gray-300 rounded text-xs md:text-sm mb-1';
+                // Add input event listener for debounced saving
+                descriptionInput.addEventListener('input', () => handleDescriptionInput(logo.id));
+
+                const descriptionStatus = document.createElement('p');
+                descriptionStatus.id = `desc-status-${logo.id}`;
+                descriptionStatus.className = 'text-xs text-gray-500 h-4'; // Height to prevent layout shift
+
+                descriptionContainer.appendChild(descriptionInput);
+                descriptionContainer.appendChild(descriptionStatus);
+            }
+            // --- END MODIFICATION ---
+
+            const voteButton = document.createElement('button');
+            voteButton.textContent = 'Vote';
+            voteButton.className = 'w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out mt-auto'; // Added mt-auto
+            voteButton.onclick = () => handleVoteClick(logo.id);
+
+            div.appendChild(img);
+            // --- MODIFICATION: Append description container ---
+            div.appendChild(descriptionContainer);
+            // --- END MODIFICATION ---
+            div.appendChild(voteCount); // Moved vote count below description
+            div.appendChild(voteButton);
+
+            // Add delete button for admin
+            if (isAdmin) {
+                const deleteButton = document.createElement('button');
+                deleteButton.innerHTML = '&times;'; // 'X' symbol
+                deleteButton.className = 'absolute top-1 right-1 bg-red-500 hover:bg-red-700 text-white font-bold h-6 w-6 rounded-full flex items-center justify-center text-xs z-10'; // Added z-index
+                deleteButton.title = 'Delete Logo';
+                deleteButton.onclick = (e) => {
+                    e.stopPropagation(); // Prevent triggering image click
+                    handleDeleteLogo(logo.id);
+                };
+                div.appendChild(deleteButton);
+            }
+
+            return div;
+        }
+
+        // --- Event Handlers ---
+
+        async function handleCreateNamespace() {
+            setStatusMessage('Creating namespace...', false);
+            try {
+                const response = await fetch(`${apiUrl}/namespace`, { method: 'POST' });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `Failed to create namespace: ${response.statusText}`);
+                }
+                const data = await response.json();
+
+                // --- MODIFICATION START ---
+                // Update state before calling initializeNamespaceView
+                currentNamespaceId = data.namespaceId;
+                currentAdminKey = data.adminKey;
+                isAdmin = true; // Creator is admin
+
+                // Update URL without reloading - this makes initializeNamespaceView work correctly if called immediately
+                const adminUrl = `${window.location.origin}${window.location.pathname}?namespace=${currentNamespaceId}&admin=${currentAdminKey}`;
+                history.pushState({ namespaceId: currentNamespaceId, adminKey: currentAdminKey }, '', adminUrl);
+
+                // Display links (will also be handled by initializeNamespaceView, but good for immediate feedback)
+                // const baseUrl = window.location.origin + window.location.pathname; // Base URL already correct due to pushState
+                // const votingUrl = `${baseUrl}?namespace=${data.namespaceId}`;
+                // votingLinkA.href = votingUrl;
+                // votingLinkA.textContent = votingUrl;
+                // adminLinkA.href = adminUrl; // adminUrl already calculated
+                // adminLinkA.textContent = adminUrl;
+                // namespaceLinksDiv.style.display = 'block'; // This will be set by initializeNamespaceView
+
+                // --- I18N: Use translation key ---
+                setStatusMessage('statusNamespaceCreated', false);
+                // --- MODIFICATION END ---
+
+                // Optionally redirect to the new namespace admin view immediately
+                // window.location.href = adminUrl; // Avoid redirect, use pushState and update view
+
+                // Or just update the UI to reflect the new state without redirecting
+                // currentNamespaceId = data.namespaceId; // Moved up
+                // currentAdminKey = data.adminKey; // Moved up
+                // isAdmin = true; // Creator is admin // Moved up
+                initializeNamespaceView(); // Refresh view for the new namespace
+
+            } catch (error) {
+                console.error('Error creating namespace:', error);
+                setStatusMessage(`Error: ${error.message}`, true);
+                namespaceLinksDiv.style.display = 'none'; // Hide links on error
+            }
+        }
+
+        async function handleUpload(event) {
+            event.preventDefault();
+            if (!currentNamespaceId) {
+                uploadStatus.textContent = 'Error: No namespace selected.';
+                uploadStatus.className = 'mt-2 text-sm text-red-500';
+                return;
+            }
+            if (!logoFileInput.files || logoFileInput.files.length === 0) {
+                uploadStatus.textContent = 'Please select one or more files to upload.';
+                uploadStatus.className = 'mt-2 text-sm text-yellow-600';
+                return;
+            }
+
+            const fileCount = logoFileInput.files.length;
+            uploadStatus.textContent = `Uploading ${fileCount} file(s)...`;
+            uploadStatus.className = 'mt-2 text-sm text-blue-600';
+
+            try {
+                const formData = new FormData();
+                for (let i = 0; i < logoFileInput.files.length; i++) {
+                    formData.append('logoFiles', logoFileInput.files[i]); // Use the name matching backend array
+                }
+                // Alternatively, simpler:
+                // const formData = new FormData(uploadForm); // If input name is correct
+
+                const response = await fetch(`${apiUrl}/upload?namespace=${currentNamespaceId}`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const result = await response.json();
+
+                // --- MODIFICATION: Handle different success/error statuses ---
+                if (!response.ok && response.status !== 207) { // 207 is partial success
+                    throw new Error(result.message || `Upload failed: ${response.statusText}`);
+                }
+
+                // Handle full or partial success
+                if (response.status === 201) { // All successful
+                    uploadStatus.textContent = `Success: ${result.message}`;
+                    uploadStatus.className = 'mt-2 text-sm text-green-600';
+                } else if (response.status === 207) { // Partial success
+                    uploadStatus.textContent = `Partial Success: ${result.message}`;
+                    uploadStatus.className = 'mt-2 text-sm text-yellow-600';
+                    // Optionally display more details about errors from result.errors
+                    console.warn("Upload errors:", result.errors);
+                } else {
+                    // Should be caught by the !response.ok check, but as a fallback
+                    uploadStatus.textContent = `Success: ${result.message || 'Upload processed.'}`;
+                    uploadStatus.className = 'mt-2 text-sm text-green-600';
+                }
+
+                logoFileInput.value = ''; // Clear the input
+                await loadLogos(); // Refresh the grid
+                // --- END MODIFICATION ---
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                // --- I18N: Use translation key ---
+                uploadStatus.textContent = t('statusUploadError', { message: error.message });
+                uploadStatus.className = 'mt-2 text-sm text-red-500';
+            }
+        }
+
+        function handleVoteClick(logoId) {
+            const identifierKey = `namespace-${currentNamespaceId}-identifier`;
+            const storedIdentifier = localStorage.getItem(identifierKey);
+
+            if (storedIdentifier) {
+                // Identifier exists, proceed to vote directly
+                submitVote(logoId, storedIdentifier);
+            } else {
+                // No identifier stored for this namespace, open modal
+                currentLogoIdToVote = logoId; // Store which logo is being voted on
+                openModal();
+            }
+        }
+
+        function handleSubmitIdentifier() {
+            const identifier = identifierInput.value.trim();
+            if (!identifier) {
+                modalError.textContent = 'Identifier cannot be empty.';
+                return;
+            }
+            if (!currentLogoIdToVote) {
+                modalError.textContent = 'Error: No logo selected for voting.';
+                return;
+            }
+
+            modalError.textContent = ''; // Clear previous errors
+
+            // Encode identifier (simple Base64 for this example)
+            const encodedIdentifier = btoa(identifier); // Base64 encode
+
+            // Store identifier in localStorage, scoped to namespace
+            const identifierKey = `namespace-${currentNamespaceId}-identifier`;
+            localStorage.setItem(identifierKey, encodedIdentifier);
+
+            // Close modal and submit the vote
+            closeModal();
+            submitVote(currentLogoIdToVote, encodedIdentifier);
+            identifierInput.value = ''; // Clear input
+            currentLogoIdToVote = null; // Reset
+        }
+
+        async function submitVote(logoId, identifier) {
+            if (!currentNamespaceId) return;
+            setStatusMessage('Submitting vote...', false);
+
+            try {
+                const response = await fetch(`${apiUrl}/vote?namespace=${currentNamespaceId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ logoId, identifier }),
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    // Handle specific conflict case (already voted)
+                    if (response.status === 409) {
+                        setStatusMessage(t('statusVoteExists'), true);
+                    } else {
+                        throw new Error(result.message || `Vote failed: ${response.statusText}`);
+                    }
+                } else {
+                    setStatusMessage(t('statusVoteRecorded'), false);
+                    // Update vote count display dynamically IN THE GRID
+                    const voteCountElement = document.getElementById(`votes-${logoId}`);
+                    if (voteCountElement) {
+                        voteCountElement.textContent = `Votes: ${result.votes}`;
+                    }
+                    // Update the stored logo data as well, so cycling shows correct count if we re-fetch later
+                    const logoIndex = displayedLogos.findIndex(l => l.id === logoId);
+                    if (logoIndex !== -1) {
+                        // Note: This assumes the identifier wasn't already present.
+                        // A more robust approach might re-fetch the specific logo's data.
+                        displayedLogos[logoIndex].votes = result.votes;
+                    }
+                }
+
+            } catch (error) {
+                console.error('Vote error:', error);
+
+                setStatusMessage(`Error: ${error.message}`, true);
+            }
+        }
+
+        // --- Admin Actions ---
+
+        async function handleDeleteLogo(logoId) {
+            if (!isAdmin || !currentAdminKey || !currentNamespaceId) return;
+
+            if (!confirm(t('confirmDeleteLogo', { logoId }))) {
+                return;
+            }
+
+            setStatusMessage('Deleting logo...', false);
+            try {
+                const response = await fetch(`${apiUrl}/logo?namespace=${currentNamespaceId}&logoId=${logoId}&admin=${currentAdminKey}`, {
+                    method: 'DELETE',
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.message || `Failed to delete logo: ${response.statusText}`);
+                }
+                setStatusMessage('Logo deleted successfully.', false);
+                await loadLogos(); // Refresh grid
+            } catch (error) {
+                console.error('Error deleting logo:', error);
+                setStatusMessage(`Error: ${error.message}`, true);
+            }
+        }
+
+        async function handleClearVotes() {
+            if (!isAdmin || !currentAdminKey || !currentNamespaceId) return;
+
+            if (!confirm('Are you sure you want to clear ALL votes for this namespace? This cannot be undone.')) {
+                return;
+            }
+
+            setStatusMessage('Clearing votes...', false);
+            try {
+                const response = await fetch(`${apiUrl}/clear-votes?namespace=${currentNamespaceId}&admin=${currentAdminKey}`, {
+                    method: 'POST',
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.message || `Failed to clear votes: ${response.statusText}`);
+                }
+                setStatusMessage('All votes cleared successfully.', false);
+                await loadLogos(); // Refresh grid to show zero votes
+            } catch (error) {
+                console.error('Error clearing votes:', error);
+                setStatusMessage(`Error: ${error.message}`, true);
+            }
+        }
+
+        async function handleDeleteNamespace() {
+            if (!isAdmin || !currentAdminKey || !currentNamespaceId) return;
+
+            if (!confirm('WARNING: Are you sure you want to delete this ENTIRE namespace, including all logos and votes? This cannot be undone.')) {
+                return;
+            }
+
+            setStatusMessage('Deleting namespace...', false);
+            try {
+                const response = await fetch(`${apiUrl}/namespace?namespace=${currentNamespaceId}&admin=${currentAdminKey}`, {
+                    method: 'DELETE',
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.message || `Failed to delete namespace: ${response.statusText}`);
+                }
+                setStatusMessage('Namespace deleted successfully. Redirecting...', false);
+                // Redirect to home page after deletion
+                setTimeout(() => {
+                    window.location.href = window.location.origin + window.location.pathname;
+                }, 2000);
+
+            } catch (error) {
+                console.error('Error deleting namespace:', error);
+                setStatusMessage(`Error: ${error.message}`, true);
+            }
+        }
+
+        // --- Logo Viewer Modal Control ---
+        function openLogoViewer(index) {
+            if (index < 0 || index >= displayedLogos.length) return;
+            currentLogoIndex = index;
+            showLogoAtIndex(currentLogoIndex);
+            logoViewerModal.style.display = "flex"; // Show the modal using flex
+            document.body.style.overflow = 'hidden'; // Prevent body scrolling
+        }
+
+        function closeLogoViewer() {
+            logoViewerModal.style.display = "none"; // Hide the modal
+            logoViewerImg.src = ""; // Clear src
+            currentLogoIndex = -1; // Reset index
+            document.body.style.overflow = ''; // Restore body scrolling
+        }
+
+        function showLogoAtIndex(index) {
+            if (index < 0 || index >= displayedLogos.length) return;
+
+            currentLogoIndex = index;
+            const logo = displayedLogos[index];
+            logoViewerImg.src = `${apiUrl}/data/uploads/${logo.path}`;
+            logoViewerImg.alt = `Logo ${index + 1}`;
+
+            // Update button states
+            logoViewerPrevBtn.classList.toggle('disabled', index === 0);
+            logoViewerNextBtn.classList.toggle('disabled', index === displayedLogos.length - 1);
+        }
+
+        function showPreviousLogo() {
+            if (currentLogoIndex > 0) {
+                showLogoAtIndex(currentLogoIndex - 1);
+            }
+        }
+
+        function showNextLogo() {
+            if (currentLogoIndex < displayedLogos.length - 1) {
+                showLogoAtIndex(currentLogoIndex + 1);
+            }
+        }
+
+        function handleModalVoteClick() {
+            if (currentLogoIndex !== -1 && currentLogoIndex < displayedLogos.length) {
+                const logoId = displayedLogos[currentLogoIndex].id;
+                handleVoteClick(logoId); // Reuse existing vote logic
+            }
+        }
+
+        function handleKeydown(event) {
+            // Only act if the logo viewer modal is visible
+            if (logoViewerModal.style.display === 'flex') {
+                if (event.key === 'ArrowLeft') {
+                    showPreviousLogo();
+                } else if (event.key === 'ArrowRight') {
+                    showNextLogo();
+                } else if (event.key === 'Escape') {
+                    closeLogoViewer();
+                }
+            }
+        }
+
+        // --- Modal Control ---
+        function openModal() {
+            modalError.textContent = ''; // Clear errors on open
+            identifierModal.style.display = 'block';
+        }
+
+        function closeModal() {
+            identifierModal.style.display = 'none';
+        }
+
+        // Close modal if user clicks outside of it
+        window.onclick = function (event) {
+            if (event.target == passwordModal) {
+                closePasswordModal();
+            }
+            if (event.target == identifierModal) {
+                closeModal();
+            }
+            if (event.target == logoViewerModal) {
+                closeLogoViewer();
+            }
+        }
+
+        // Password Modal Control
+        function openPasswordModal() {
+            passwordModalError.textContent = '';
+            passwordInput.value = '';
+            passwordModal.style.display = 'block';
+        }
+
+        function closePasswordModal() {
+            passwordModal.style.display = 'none';
+        }
+
+        // Handle password verification
+        async function verifyPassword(password) {
+            try {
+                const response = await fetch(`${apiUrl}/namespace/verify-password?namespace=${currentNamespaceId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ password }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.verified) {
+                    namespacePasswordVerified = true;
+                    closePasswordModal();
+                    await loadLogos(); // Reload logos after verification
+                } else {
+                    passwordModalError.textContent = result.message || 'Invalid password.';
+                }
+            } catch (error) {
+                console.error('Error verifying password:', error);
+                passwordModalError.textContent = 'Failed to verify password.';
+            }
+        }
+
+        // Handle setting namespace password
+        async function handleSetPassword() {
+            if (!isAdmin || !currentAdminKey || !currentNamespaceId) return;
+
+            const password = setPasswordInput.value;
+            passwordStatus.textContent = 'Setting password...';
+            passwordStatus.className = 'text-sm text-blue-600';
+
+            try {
+                const response = await fetch(`${apiUrl}/namespace/password?namespace=${currentNamespaceId}&admin=${currentAdminKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ password }),
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Failed to set password.');
+                }
+
+                setPasswordInput.value = '';
+                passwordStatus.textContent = result.message;
+                passwordStatus.className = 'text-sm text-green-600';
+
+                // Clear status after a delay
+                setTimeout(() => {
+                    passwordStatus.textContent = result.isProtected ?
+                        'Namespace is password protected.' :
+                        'Namespace is not password protected.';
+                    passwordStatus.className = 'text-sm text-gray-600';
+                }, 3000);
+
+            } catch (error) {
+                console.error('Error setting password:', error);
+                passwordStatus.textContent = `Error: ${error.message}`;
+                passwordStatus.className = 'text-sm text-red-600';
+            }
+        }
+
+        // --- Utility ---
+        function setStatusMessage(message, isError = false) {
+            statusMessage.textContent = message;
+            statusMessage.className = `mt-6 text-center font-medium ${isError ? 'text-red-600' : 'text-green-600'}`;
+        }
+
+        // --- MODIFICATION START: New function to process logo/namespace data ---
+        function processLogosResponse(responseData) {
+            const logos = responseData.logos || [];
+            currentFriendlyUrlName = responseData.friendlyUrlName || null; // Update global state
+            const currentNamespaceDescription = responseData.namespaceDescription || ""; // Get namespace description
+
+            // --- MODIFICATION: Ensure description is part of the logo object ---
+            displayedLogos = logos.map(logo => ({
+                ...logo,
+                description: logo.description || "" // Ensure description exists
+            }));
+            // --- END MODIFICATION ---
+
+            if (logos.length === 0) {
+                noLogosMessage.style.display = 'block';
+                setStatusMessage('', false);
+            } else {
+                noLogosMessage.style.display = 'none';
+                logoGrid.innerHTML = ''; // Clear grid before adding new elements
+                displayedLogos.forEach((logo, index) => { // Use updated displayedLogos
+                    const logoElement = createLogoElement(logo, index);
+                    logoGrid.appendChild(logoElement);
+                });
+                setStatusMessage('', false);
+            }
+
+            // === NEW: Update Namespace Description Display ===
+            namespaceDescriptionText.textContent = currentNamespaceDescription || t('descriptionNone'); // Display fetched description or 'None' message
+            if (isAdmin) {
+                descriptionInput.value = currentNamespaceDescription; // Populate admin textarea
+                updateCharacterCount(); // Update count on load
+            }
+            // === END NEW ===
+
+            // Update friendly URL display elements after processing
+            updateFriendlyUrlDisplay();
+            // --- I18N: Translate elements updated by this function ---
+            translatePage();
+            // --- END I18N ---
+        }
+        // --- MODIFICATION END ---
+
+        // --- MODIFICATION START: New function to update friendly URL UI elements ---
+        function updateFriendlyUrlDisplay() {
+            if (isAdmin) { // Only show input/current if admin
+                friendlyUrlInput.value = currentFriendlyUrlName || '';
+                currentFriendlyUrlSpan.textContent = currentFriendlyUrlName || 'None';
+            }
+
+            // Update share link visibility and content
+            if (currentFriendlyUrlName) {
+                const friendlyUrl = `${window.location.origin}/v/${currentFriendlyUrlName}`;
+                friendlyLinkA.href = friendlyUrl;
+                friendlyLinkA.textContent = friendlyUrl;
+                friendlyLinkP.style.display = 'block';
+            } else {
+                friendlyLinkP.style.display = 'none';
+            }
+            // --- I18N: Translate elements updated by this function ---
+            // (Specifically the 'Current: {url}' part)
+            translatePage();
+            // --- END I18N ---
+        }
+        // --- MODIFICATION END ---
+
+        // --- MODIFICATION START: Add handler for setting friendly URL ---
+        async function handleSetFriendlyUrl() {
+            if (!isAdmin || !currentNamespaceId || !currentAdminKey) return;
+
+            const desiredName = friendlyUrlInput.value; // Get value from input
+
+            setStatusMessage('Setting friendly URL...', false);
+            // --- I18N: Use translation key ---
+            friendlyUrlStatus.textContent = t('loading'); // Indicate updating
+            friendlyUrlStatus.className = 'mt-1 text-sm text-gray-600';
+
+            try {
+                const response = await fetch(`${apiUrl}/namespace/friendly-url?namespace=${currentNamespaceId}&admin=${currentAdminKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ friendlyName: desiredName }), // Send the raw desired name
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    // Handle specific conflict error
+                    if (response.status === 409) {
+                        const errorMessage = result.message || 'Failed to set friendly URL.';
+                        friendlyUrlStatus.textContent = t('statusFriendlyUrlError', { message: errorMessage });
+                        friendlyUrlStatus.className = 'mt-1 text-sm text-red-600';
+                    } else {
+                        throw new Error(result.message || `Failed to set friendly URL: ${response.statusText}`);
+                    }
+                    setStatusMessage(`Error: ${result.message || 'Failed to set friendly URL.'}`, true); // General status
+                } else {
+                    setStatusMessage('Friendly URL updated!', false); // General status
+                    friendlyUrlStatus.textContent = `Current: ${result.friendlyUrlName || 'None'}`; // Specific status
+                    friendlyUrlStatus.className = 'mt-1 text-sm text-gray-600';
+                    currentFriendlyUrlName = result.friendlyUrlName || null; // Update state
+                    updateFriendlyUrlDisplay(); // Refresh links and input
+                }
+
+            } catch (error) {
+                console.error('Error setting friendly URL:', error);
+                setStatusMessage(`Error: ${error.message}`, true); // General status
+                friendlyUrlStatus.textContent = `Error: ${error.message}`; // Specific status
+                friendlyUrlStatus.className = 'mt-1 text-sm text-red-600';
+            }
+        }
+        // --- MODIFICATION END ---
+
+        // --- MODIFICATION START: Add Description Input Handler (Debounced Save) ---
+        function handleDescriptionInput(logoId) {
+            const statusElement = document.getElementById(`desc-status-${logoId}`);
+            if (statusElement) {
+                statusElement.textContent = 'Saving...';
+                statusElement.className = 'text-xs text-blue-600 h-4';
+            }
+
+            // Clear existing timer for this logoId
+            if (saveDescriptionDebounceTimers[logoId]) {
+                clearTimeout(saveDescriptionDebounceTimers[logoId]);
+            }
+
+            // Set a new timer
+            saveDescriptionDebounceTimers[logoId] = setTimeout(() => {
+                handleSaveDescription(logoId);
+            }, 1500); // Debounce time: 1.5 seconds
+        }
+        // --- END MODIFICATION ---
+
+        // --- MODIFICATION START: Add Save Description Handler ---
+        async function handleSaveDescription(logoId) {
+            if (!isAdmin || !currentAdminKey || !currentNamespaceId) return;
+
+            const inputElement = document.getElementById(`desc-input-${logoId}`);
+            const statusElement = document.getElementById(`desc-status-${logoId}`);
+            const description = inputElement ? inputElement.value : '';
+
+            // No need for setStatusMessage here, use the local status element
+            if (statusElement) {
+                statusElement.textContent = 'Saving...';
+                statusElement.className = 'text-xs text-blue-600 h-4';
+            }
+
+            try {
+                const response = await fetch(`${apiUrl}/logo/description?namespace=${currentNamespaceId}&logoId=${logoId}&admin=${currentAdminKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ description: description }),
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || `Failed to save description: ${response.statusText}`);
+                }
+
+                if (statusElement) {
+                    statusElement.textContent = 'Saved!';
+                    statusElement.className = 'text-xs text-green-600 h-4';
+                    // Optionally clear the 'Saved!' message after a delay
+                    setTimeout(() => {
+                        if (statusElement.textContent === 'Saved!') {
+                            statusElement.textContent = '';
+                        }
+                    }, 3000);
+                }
+                // Update the internal data store if needed (optional, as loadLogos refetches)
+                const logoIndex = displayedLogos.findIndex(l => l.id === logoId);
+                if (logoIndex !== -1) {
+                    displayedLogos[logoIndex].description = result.description;
+                }
+
+            } catch (error) {
+                console.error('Error saving description:', error);
+                if (statusElement) {
+                    statusElement.textContent = `Error: ${error.message}`;
+                    statusElement.className = 'text-xs text-red-600 h-4';
+                }
+                // Use general status message for broader errors
+                setStatusMessage(`Error saving description for logo ${logoId}: ${error.message}`, true);
+            }
+        }
+        // --- END MODIFICATION ---
+
+        // Add event listeners for password functionality
+        submitPasswordBtn.addEventListener('click', () => verifyPassword(passwordInput.value));
+        setPasswordBtn.addEventListener('click', handleSetPassword);
+
+        // Handle Enter key in password input
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                verifyPassword(passwordInput.value);
+            }
+        });

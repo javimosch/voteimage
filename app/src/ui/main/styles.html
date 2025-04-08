@@ -1,0 +1,166 @@
+<style>
+        /* Basic styling for modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close-button:hover {
+            color: #666;
+        }
+
+        /* Styling for Logo Viewer Modal */
+        .logo-viewer-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .logo-viewer-modal.visible {
+            opacity: 1;
+        }
+
+        .logo-viewer-content {
+            @apply w-auto h-auto max-w-[90vw] max-h-[70vh] md:max-w-3xl md:max-h-[80vh];
+            object-fit: contain;
+            cursor: default;
+            margin-bottom: 1rem;
+        }
+
+        .logo-viewer-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            position: absolute;
+            /* Position controls relative to modal */
+            bottom: 2vh;
+            /* Position at the bottom */
+            z-index: 1001;
+        }
+
+        .logo-viewer-nav {
+            @apply absolute top-1/2 -translate-y-1/2 bg-gray-800/60 text-white p-2 md:p-3 text-2xl md:text-3xl rounded;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            z-index: 1002;
+        }
+
+        .logo-viewer-nav:hover {
+            background-color: rgba(80, 80, 80, 0.8);
+        }
+
+        .logo-viewer-prev {
+            left: 2vw;
+        }
+
+        .logo-viewer-next {
+            right: 2vw;
+        }
+
+        .logo-viewer-nav.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .logo-viewer-vote-btn {
+            @apply bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 rounded-lg;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+            margin: 0 10px;
+        }
+
+        @media (max-width: 640px) {
+            .logo-viewer-vote-btn {
+                @apply px-4 py-2 text-sm;
+            }
+        }
+
+        .logo-viewer-close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            cursor: pointer;
+            z-index: 1001;
+            /* Above the image */
+        }
+
+        /* Enhanced language switcher */
+        .lang-switcher {
+            @apply flex justify-end space-x-2 text-sm md:text-base;
+        }
+
+        .lang-switcher a {
+            @apply px-3 py-1 rounded transition-all duration-150 cursor-pointer;
+            position: relative;
+        }
+
+        .lang-switcher a.active {
+            background-color: #3B82F6;
+            color: white;
+            font-weight: 600;
+        }
+
+        .lang-switcher a:not(.active):hover {
+            background-color: #F1F1F1;
+        }
+
+        .lang-switcher a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            @apply bg-blue-600;
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+
+        .lang-switcher a:not(.active):hover::after {
+            width: 100%;
+        }
+    </style>
