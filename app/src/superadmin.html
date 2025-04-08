@@ -273,6 +273,10 @@
             deleteAllBtn.addEventListener('click', handleDeleteAll);
             exportDataBtn.addEventListener('click', handleExportData);
             importForm.addEventListener('submit', handleImportData);
+
+            // === ADD THIS LINE BACK ===
+            await loadNamespaces(); // Load the list initially
+            // === END ADDITION ===
         });
 
         async function fetchNamespaces() {
