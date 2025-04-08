@@ -124,5 +124,12 @@
   "statusPasswordInvalid": "Invalid password.",
   "statusPasswordVerified": "Password verified.",
   "statusNamespaceProtected": "Namespace is password protected.",
-  "statusNamespaceNotProtected": "Namespace is not password protected."
+  "statusNamespaceNotProtected": "Namespace is not password protected.",
+
+  "descriptionControls": "Namespace Description",
+  "descriptionLabel": "Namespace Description:",
+  "saveDescriptionBtn": "Save Description",
+  "characterCount": "Characters:",
+  "namespaceDescription": "Voting Purpose",
+  "statusDescriptionSaved": "Description saved!"
 }

@@ -20,7 +20,7 @@ const DATA_DIR = path.join(__dirname, '..', 'data');
 const NAMESPACES_DIR = path.join(DATA_DIR, 'namespaces');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 
-const { readNamespaceData, writeNamespaceData,getNamespaceFilePath } = require('./utils/dataHelpers');
+const { readNamespaceData, writeNamespaceData, getNamespaceFilePath } = require('./utils/dataHelpers');
 
 // --- Friendly URL Map ---
 let friendlyUrlToNamespaceIdMap = {};
@@ -106,9 +106,6 @@ const superadminAuthMiddleware = superadminUser && superadminPassword ? basicAut
 
 // --- Data Helper Functions ---
 // Get the path for a namespace's JSON file
-
-
-
 
 // Validate admin key
 async function validateAdminKey(namespaceId, adminKey) {
@@ -239,7 +236,8 @@ app.post('/namespace', async (req, res) => {
         createdAt: new Date().toISOString(),
         logos: [],
         friendlyUrlName: null,
-        password: null // Add password field, initially null
+        password: null, // Add password field, initially null
+        description: "" // Add description field, initially empty
     };
 
     try {
@@ -252,16 +250,51 @@ app.post('/namespace', async (req, res) => {
     }
 });
 
+// --- NEW ENDPOINT: Set Namespace Description ---
+app.post('/namespace/description', async (req, res) => {
+    const { namespace, admin } = req.query;
+    const { description } = req.body;
+
+    if (!namespace || !admin) {
+        return res.status(400).json({ message: 'Namespace ID and Admin Key are required query parameters.' });
+    }
+    if (description === undefined || typeof description !== 'string') {
+        return res.status(400).json({ message: 'Description (string) is required in the request body.' });
+    }
+    // Validate description length (e.g., max 500 characters)
+    if (description.length > 500) {
+        return res.status(400).json({ message: 'Description exceeds 500 characters limit.' });
+    }
+
+    try {
+        const isAdmin = await validateAdminKey(namespace, admin);
+        if (!isAdmin) {
+            return res.status(403).json({ message: 'Invalid Admin Key.' });
+        }
+
+        const data = await readNamespaceData(namespace);
+        if (!data) {
+            return res.status(404).json({ message: 'Namespace not found.' });
+        }
+
+        data.description = description.trim(); // Store trimmed description
+
+        await writeNamespaceData(namespace, data);
+
+        console.log(`Description updated for namespace ${namespace}`);
+        res.status(200).json({ message: 'Description updated successfully.', description: data.description });
+    } catch (error) {
+        console.error(`Error updating description for namespace ${namespace}:`, error);
+        res.status(500).json({ message: 'Failed to update description.' });
+    }
+});
+
 // --- NEW ENDPOINT: Set Namespace Password ---
 app.post('/namespace/password', async (req, res) => {
     const { namespace, admin } = req.query;
-    const { password } = req.body;
 
     if (!namespace || !admin) {
         return res.status(400).json({ message: 'Namespace ID and Admin Key are required.' });
-    }
-    if (typeof password !== 'string') {
-        return res.status(400).json({ message: 'Password (string) is required in the request body.' });
     }
 
     try {
@@ -277,14 +310,14 @@ app.post('/namespace/password', async (req, res) => {
 
         // For POC, store password as plain text
         // TODO: Implement password hashing in production
-        data.password = password || null; // Allow removing password by sending empty string
+        data.password = req.body.password || null; // Allow removing password by sending empty string
 
         await writeNamespaceData(namespace, data);
 
-        console.log(`Password ${password ? 'set' : 'removed'} for namespace ${namespace}`);
+        console.log(`Password ${req.body.password ? 'set' : 'removed'} for namespace ${namespace}`);
         res.status(200).json({ 
-            message: password ? 'Password set successfully.' : 'Password removed.',
-            isProtected: !!password
+            message: req.body.password ? 'Password set successfully.' : 'Password removed.',
+            isProtected: !!req.body.password
         });
     } catch (error) {
         console.error(`Error setting password for namespace ${namespace}:`, error);
@@ -378,7 +411,7 @@ app.post('/namespace/verify-password', async (req, res) => {
     }
 });
 
-// --- MODIFY: GET /logos to check password protection ---
+// --- MODIFY: GET /logos to include namespace description ---
 app.get('/logos', async (req, res) => {
     const { namespace } = req.query;
     if (!namespace) {
@@ -395,15 +428,17 @@ app.get('/logos', async (req, res) => {
             id: logo.id,
             path: logo.path,
             votes: logo.votes.length,
-            description: logo.description || "" // Return description, default to empty string
+            description: logo.description || "" // Return logo description, default to empty string
         }));
 
         res.json({
             logos: logosResponse,
             friendlyUrlName: data.friendlyUrlName || null,
-            isPasswordProtected: !!data.password // Add flag to indicate if password protected
+            isPasswordProtected: !!data.password, // Add flag to indicate if password protected
+            namespaceDescription: data.description || "" // <-- ADDED: Return namespace description
         });
     } catch (error) {
+        console.error(`Error fetching logos for namespace ${namespace}:`, error); // Added logging
         res.status(500).json({ message: 'Failed to retrieve logos.' });
     }
 });

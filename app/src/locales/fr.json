@@ -124,5 +124,12 @@
   "statusPasswordInvalid": "Mot de passe invalide.",
   "statusPasswordVerified": "Mot de passe vérifié.",
   "statusNamespaceProtected": "L'espace est protégé par mot de passe.",
-  "statusNamespaceNotProtected": "L'espace n'est pas protégé par mot de passe."
+  "statusNamespaceNotProtected": "L'espace n'est pas protégé par mot de passe.",
+
+  "descriptionControls": "Description de l'Espace",
+  "descriptionLabel": "Description de l'Espace :",
+  "saveDescriptionBtn": "Enregistrer Description",
+  "characterCount": "Caractères :",
+  "namespaceDescription": "But du Vote",
+  "statusDescriptionSaved": "Description enregistrée !"
 }
