@@ -678,15 +678,8 @@ cron.schedule('0 0 * * *', async () => {
 // --- Superadmin Routes ---
 const superadminRouter = express.Router();
 
-// --- MODIFICATION: Serve old superadmin.html ---
-// GET /superadmin - Serve the HTML page (apply auth here)
-app.get('/superadmin', superadminAuthMiddleware, (req, res) => {
-    res.sendFile(path.join(__dirname, 'superadmin.html'));
-});
-// --- MODIFICATION END ---
-
 // --- NEW ENDPOINT: Serve V2 Superadmin UI ---
-app.get('/v2/superadmin', superadminAuthMiddleware, async (req, res) => {
+app.get('/superadmin', superadminAuthMiddleware, async (req, res) => {
     try {
         const superadminUiDir = path.join(UI_SRC_DIR, 'superadmin');
         const compiledHtml = await compileVirtualFile(superadminUiDir);
