@@ -13,7 +13,7 @@
   "votingLink": "Lien de Vote :",
   "friendlyLink": "Lien Amical :",
   "adminLink": "Lien Admin :",
-  "adminLinkNote": "(Gardez ceci en sécurité !)",
+  "adminLinkNote": "(Gardez ceci en sécurité en copiant le lien ailleurs !)",
   "welcomeMessage": "Bienvenue ! Créez un nouvel espace de vote ou accédez à un espace existant via l'URL.",
   "createNamespaceBtn": "Créer un Nouvel Espace de Vote",
   "uploadLogosTitle": "Upload Nouveau(x) Logo(s)",
@@ -131,5 +131,6 @@
   "characterCount": "Caractères :",
   "namespaceDescription": "But du Vote",
   "statusDescriptionSaved": "Description enregistrée !",
-  "statusVoteExists": "Vous avez déjà voté pour ce logo."
+  "statusVoteExists": "Vous avez déjà voté pour ce logo.",
+  "backToMainBtn": "Retour à la page d'accueil"
 }

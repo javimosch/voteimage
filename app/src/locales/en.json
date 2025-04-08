@@ -13,7 +13,7 @@
   "votingLink": "Voting Link:",
   "friendlyLink": "Friendly Link:",
   "adminLink": "Admin Link:",
-  "adminLinkNote": "(Keep this safe!)",
+  "adminLinkNote": "(Keep this safe by copying it else where!)",
   "welcomeMessage": "Welcome! Create a new voting namespace or access an existing one using the URL.",
   "createNamespaceBtn": "Create New Vote Namespace",
   "uploadLogosTitle": "Upload New Logo(s)",
@@ -131,5 +131,6 @@
   "characterCount": "Characters:",
   "namespaceDescription": "Voting Purpose",
   "statusDescriptionSaved": "Description saved!",
-  "statusVoteExists": "You have already voted for this logo."
+  "statusVoteExists": "You have already voted for this logo.",
+  "backToMainBtn": "Back to Main"
 }

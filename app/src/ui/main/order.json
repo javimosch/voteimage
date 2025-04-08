@@ -2,6 +2,15 @@
     "top.html",
     "styles.html",
     "body.html",
-    "script.js",
+    "01_state.js",
+    "02_i18n.js",
+    "03_utils.js",
+    "04_domElements.js",
+    "05_api.js",
+    "06_admin.js",
+    "07_ui.js",
+    "08_modals.js",
+    "09_handlers.js",
+    "10_init.js",
     "bottom.html"
 ]
