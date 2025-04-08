@@ -19,8 +19,10 @@ const port = 3000;
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const NAMESPACES_DIR = path.join(DATA_DIR, 'namespaces');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
+const UI_SRC_DIR = path.join(__dirname, 'ui');
 
 const { readNamespaceData, writeNamespaceData, getNamespaceFilePath } = require('./utils/dataHelpers');
+const { compileVirtualFile } = require('./utils/virtualFile');
 
 // --- Friendly URL Map ---
 let friendlyUrlToNamespaceIdMap = {};
@@ -167,9 +169,7 @@ async function ensureDataDirs() {
 // --- Middleware ---
 app.use(express.json());
 app.use('/data/uploads', express.static(UPLOADS_DIR));
-// --- NEW: Serve locale files ---
 app.use('/locales', express.static(path.join(__dirname, 'locales')));
-// --- END NEW ---
 
 // --- Multer Setup for File Uploads ---
 const storage = multer.diskStorage({
@@ -678,18 +678,32 @@ cron.schedule('0 0 * * *', async () => {
 // --- Superadmin Routes ---
 const superadminRouter = express.Router();
 
-// Apply auth middleware to all superadmin routes *except* the HTML page itself initially
-// We apply it within the router for API calls, and separately for the HTML page GET request
-// superadminRouter.use(superadminAuthMiddleware); // Moved auth to specific routes or main app level
-
-// --- MODIFICATION: Serve superadmin.html ---
+// --- MODIFICATION: Serve old superadmin.html ---
 // GET /superadmin - Serve the HTML page (apply auth here)
 app.get('/superadmin', superadminAuthMiddleware, (req, res) => {
     res.sendFile(path.join(__dirname, 'superadmin.html'));
 });
 // --- MODIFICATION END ---
 
-// --- NEW ENDPOINT: Export Data ---
+// --- NEW ENDPOINT: Serve V2 Superadmin UI ---
+app.get('/v2/superadmin', superadminAuthMiddleware, async (req, res) => {
+    try {
+        const superadminUiDir = path.join(UI_SRC_DIR, 'superadmin');
+        const compiledHtml = await compileVirtualFile(superadminUiDir);
+        res.setHeader('Content-Type', 'text/html');
+        res.send(compiledHtml);
+    } catch (error) {
+        console.error("Error compiling or serving /v2/superadmin:", error);
+        if (error.message.includes('Virtual file directory not found')) {
+            res.status(404).send(`Superadmin v2 UI not found at ${error.message.split(': ')[1]}`);
+        } else {
+            res.status(500).send('Error generating Superadmin v2 interface.');
+        }
+    }
+});
+// --- END NEW ENDPOINT ---
+
+// --- NEW ENDPOINT: Export Data (in superadminRouter) ---
 superadminRouter.get('/export', async (req, res) => {
     console.log('Superadmin: Received request to export data.');
     const now = new Date();
@@ -759,148 +773,6 @@ superadminRouter.get('/export', async (req, res) => {
     console.log('Superadmin Export: Archive finalized and sent.');
 });
 // --- END NEW ENDPOINT ---
-
-// GET /superadmin/namespaces - List all namespaces (API)
-superadminRouter.get('/namespaces', async (req, res) => {
-    try {
-        const files = await fs.readdir(NAMESPACES_DIR);
-        const namespaceFiles = files.filter(file => file.endsWith('.json'));
-        const namespaceDetails = [];
-
-        for (const file of namespaceFiles) {
-            const namespaceId = file.replace('.json', '');
-            try {
-                const data = await readNamespaceData(namespaceId);
-                if (data) {
-                    const totalVotes = data.logos.reduce((sum, logo) => sum + (logo.votes ? logo.votes.length : 0), 0);
-                    namespaceDetails.push({
-                        id: namespaceId,
-                        createdAt: data.createdAt || 'N/A',
-                        logoCount: data.logos.length,
-                        totalVotes: totalVotes,
-                        adminKey: data.adminKey,
-                        friendlyUrlName: data.friendlyUrlName || null
-                    });
-                } else {
-                    namespaceDetails.push({ id: namespaceId, error: 'Could not read data', adminKey: null, friendlyUrlName: null });
-                }
-            } catch (readError) {
-                console.error(`Superadmin: Error reading namespace ${namespaceId}:`, readError);
-                namespaceDetails.push({ id: namespaceId, error: 'Error reading data', adminKey: null, friendlyUrlName: null });
-            }
-        }
-        res.json(namespaceDetails);
-    } catch (error) {
-        console.error('Superadmin: Error listing namespaces:', error);
-        res.status(500).json({ message: 'Failed to list namespaces.' });
-    }
-});
-
-// DELETE /superadmin/namespace/:namespaceId - Delete a specific namespace (API)
-superadminRouter.delete('/namespace/:namespaceId', async (req, res) => {
-    const { namespaceId } = req.params;
-    console.log(`Superadmin: Received request to delete namespace ${namespaceId}`);
-    try {
-        const deleted = await deleteNamespaceFiles(namespaceId);
-        if (deleted) {
-            console.log(`Superadmin: Namespace ${namespaceId} deleted successfully.`);
-            res.status(200).json({ message: `Namespace ${namespaceId} deleted successfully.` });
-        } else {
-            console.warn(`Superadmin: Namespace ${namespaceId} deletion reported issues (check logs).`);
-            res.status(200).json({ message: `Namespace ${namespaceId} deletion process completed. Some files might not have existed.` });
-        }
-    } catch (error) {
-        console.error(`Superadmin: Error deleting namespace ${namespaceId}:`, error);
-        res.status(500).json({ message: `Failed to delete namespace ${namespaceId}.` });
-    }
-});
-
-// DELETE /superadmin/namespaces/all - Delete ALL namespaces (API)
-superadminRouter.delete('/namespaces/all', async (req, res) => {
-    console.log('Superadmin: Received request to delete ALL namespaces.');
-    let successCount = 0;
-    let failCount = 0;
-    let notFoundCount = 0;
-    let namespacesToDelete = [];
-
-    try {
-        const files = await fs.readdir(NAMESPACES_DIR);
-        namespacesToDelete = files.filter(file => file.endsWith('.json')).map(file => file.replace('.json', ''));
-        console.log(`Superadmin: Found ${namespacesToDelete.length} namespaces to attempt deletion.`);
-
-        for (const namespaceId of namespacesToDelete) {
-            try {
-                const deleted = await deleteNamespaceFiles(namespaceId);
-                if (deleted) {
-                    successCount++;
-                } else {
-                    notFoundCount++;
-                }
-            } catch (deleteError) {
-                console.error(`Superadmin: Error during bulk delete for namespace ${namespaceId}:`, deleteError);
-                failCount++;
-            }
-        }
-
-        const message = `Deleted ${successCount} namespaces. ${notFoundCount} namespaces reported issues (e.g., already deleted). ${failCount} failed with errors.`;
-        console.log(`Superadmin: Bulk delete finished. ${message}`);
-        res.status(200).json({ message });
-
-    } catch (error) {
-        console.error('Superadmin: Error listing namespaces for bulk delete:', error);
-        res.status(500).json({ message: 'Failed to list namespaces for deletion.' });
-    }
-});
-
-// DELETE /superadmin/namespaces/empty - Delete namespaces with zero votes (API)
-superadminRouter.delete('/namespaces/empty', async (req, res) => {
-    console.log('Superadmin: Received request to delete empty namespaces.');
-    let deletedCount = 0;
-    let checkedCount = 0;
-    let errorCount = 0;
-
-    try {
-        const files = await fs.readdir(NAMESPACES_DIR);
-        const namespaceFiles = files.filter(file => file.endsWith('.json'));
-        checkedCount = namespaceFiles.length;
-        console.log(`Superadmin: Found ${checkedCount} namespaces to check for emptiness.`);
-
-        for (const file of namespaceFiles) {
-            const namespaceId = file.replace('.json', '');
-            try {
-                const data = await readNamespaceData(namespaceId);
-                if (!data) {
-                    console.warn(`Superadmin: Skipping empty check for ${namespaceId}, could not read data.`);
-                    continue;
-                }
-
-                const totalVotes = data.logos.reduce((sum, logo) => sum + (logo.votes ? logo.votes.length : 0), 0);
-
-                if (totalVotes === 0) {
-                    console.log(`Superadmin: Namespace ${namespaceId} has 0 votes. Deleting...`);
-                    const deleted = await deleteNamespaceFiles(namespaceId);
-                    if (deleted) {
-                        deletedCount++;
-                    } else {
-                        console.warn(`Superadmin: Deletion of empty namespace ${namespaceId} reported issues (check logs).`);
-                        errorCount++;
-                    }
-                }
-            } catch (processError) {
-                console.error(`Superadmin: Error processing namespace ${namespaceId} for empty deletion:`, processError);
-                errorCount++;
-            }
-        }
-
-        const message = `Checked ${checkedCount} namespaces. Deleted ${deletedCount} empty namespaces. Encountered ${errorCount} errors or issues during processing.`;
-        console.log(`Superadmin: Empty deletion finished. ${message}`);
-        res.status(200).json({ message });
-
-    } catch (error) {
-        console.error('Superadmin: Error listing namespaces for empty deletion:', error);
-        res.status(500).json({ message: 'Failed to list namespaces for empty deletion.' });
-    }
-});
 
 // --- NEW ENDPOINT: Import Data ---
 superadminRouter.post('/import', (req, res) => {
@@ -984,6 +856,148 @@ superadminRouter.post('/import', (req, res) => {
     });
 });
 // --- END NEW ENDPOINT ---
+
+// --- NEW ENDPOINT: List all namespaces (API) ---
+superadminRouter.get('/namespaces', async (req, res) => {
+    try {
+        const files = await fs.readdir(NAMESPACES_DIR);
+        const namespaceFiles = files.filter(file => file.endsWith('.json'));
+        const namespaceDetails = [];
+
+        for (const file of namespaceFiles) {
+            const namespaceId = file.replace('.json', '');
+            try {
+                const data = await readNamespaceData(namespaceId);
+                if (data) {
+                    const totalVotes = data.logos.reduce((sum, logo) => sum + (logo.votes ? logo.votes.length : 0), 0);
+                    namespaceDetails.push({
+                        id: namespaceId,
+                        createdAt: data.createdAt || 'N/A',
+                        logoCount: data.logos.length,
+                        totalVotes: totalVotes,
+                        adminKey: data.adminKey,
+                        friendlyUrlName: data.friendlyUrlName || null
+                    });
+                } else {
+                    namespaceDetails.push({ id: namespaceId, error: 'Could not read data', adminKey: null, friendlyUrlName: null });
+                }
+            } catch (readError) {
+                console.error(`Superadmin: Error reading namespace ${namespaceId}:`, readError);
+                namespaceDetails.push({ id: namespaceId, error: 'Error reading data', adminKey: null, friendlyUrlName: null });
+            }
+        }
+        res.json(namespaceDetails);
+    } catch (error) {
+        console.error('Superadmin: Error listing namespaces:', error);
+        res.status(500).json({ message: 'Failed to list namespaces.' });
+    }
+});
+
+// --- NEW ENDPOINT: Delete a specific namespace (API) ---
+superadminRouter.delete('/namespace/:namespaceId', async (req, res) => {
+    const { namespaceId } = req.params;
+    console.log(`Superadmin: Received request to delete namespace ${namespaceId}`);
+    try {
+        const deleted = await deleteNamespaceFiles(namespaceId);
+        if (deleted) {
+            console.log(`Superadmin: Namespace ${namespaceId} deleted successfully.`);
+            res.status(200).json({ message: `Namespace ${namespaceId} deleted successfully.` });
+        } else {
+            console.warn(`Superadmin: Namespace ${namespaceId} deletion reported issues (check logs).`);
+            res.status(200).json({ message: `Namespace ${namespaceId} deletion process completed. Some files might not have existed.` });
+        }
+    } catch (error) {
+        console.error(`Superadmin: Error deleting namespace ${namespaceId}:`, error);
+        res.status(500).json({ message: `Failed to delete namespace ${namespaceId}.` });
+    }
+});
+
+// --- NEW ENDPOINT: Delete ALL namespaces (API) ---
+superadminRouter.delete('/namespaces/all', async (req, res) => {
+    console.log('Superadmin: Received request to delete ALL namespaces.');
+    let successCount = 0;
+    let failCount = 0;
+    let notFoundCount = 0;
+    let namespacesToDelete = [];
+
+    try {
+        const files = await fs.readdir(NAMESPACES_DIR);
+        namespacesToDelete = files.filter(file => file.endsWith('.json')).map(file => file.replace('.json', ''));
+        console.log(`Superadmin: Found ${namespacesToDelete.length} namespaces to attempt deletion.`);
+
+        for (const namespaceId of namespacesToDelete) {
+            try {
+                const deleted = await deleteNamespaceFiles(namespaceId);
+                if (deleted) {
+                    successCount++;
+                } else {
+                    notFoundCount++;
+                }
+            } catch (deleteError) {
+                console.error(`Superadmin: Error during bulk delete for namespace ${namespaceId}:`, deleteError);
+                failCount++;
+            }
+        }
+
+        const message = `Deleted ${successCount} namespaces. ${notFoundCount} namespaces reported issues (e.g., already deleted). ${failCount} failed with errors.`;
+        console.log(`Superadmin: Bulk delete finished. ${message}`);
+        res.status(200).json({ message });
+
+    } catch (error) {
+        console.error('Superadmin: Error listing namespaces for bulk delete:', error);
+        res.status(500).json({ message: 'Failed to list namespaces for deletion.' });
+    }
+});
+
+// --- NEW ENDPOINT: Delete namespaces with zero votes (API) ---
+superadminRouter.delete('/namespaces/empty', async (req, res) => {
+    console.log('Superadmin: Received request to delete empty namespaces.');
+    let deletedCount = 0;
+    let checkedCount = 0;
+    let errorCount = 0;
+
+    try {
+        const files = await fs.readdir(NAMESPACES_DIR);
+        const namespaceFiles = files.filter(file => file.endsWith('.json'));
+        checkedCount = namespaceFiles.length;
+        console.log(`Superadmin: Found ${checkedCount} namespaces to check for emptiness.`);
+
+        for (const file of namespaceFiles) {
+            const namespaceId = file.replace('.json', '');
+            try {
+                const data = await readNamespaceData(namespaceId);
+                if (!data) {
+                    console.warn(`Superadmin: Skipping empty check for ${namespaceId}, could not read data.`);
+                    continue;
+                }
+
+                const totalVotes = data.logos.reduce((sum, logo) => sum + (logo.votes ? logo.votes.length : 0), 0);
+
+                if (totalVotes === 0) {
+                    console.log(`Superadmin: Namespace ${namespaceId} has 0 votes. Deleting...`);
+                    const deleted = await deleteNamespaceFiles(namespaceId);
+                    if (deleted) {
+                        deletedCount++;
+                    } else {
+                        console.warn(`Superadmin: Deletion of empty namespace ${namespaceId} reported issues (check logs).`);
+                        errorCount++;
+                    }
+                }
+            } catch (processError) {
+                console.error(`Superadmin: Error processing namespace ${namespaceId} for empty deletion:`, processError);
+                errorCount++;
+            }
+        }
+
+        const message = `Checked ${checkedCount} namespaces. Deleted ${deletedCount} empty namespaces. Encountered ${errorCount} errors or issues during processing.`;
+        console.log(`Superadmin: Empty deletion finished. ${message}`);
+        res.status(200).json({ message });
+
+    } catch (error) {
+        console.error('Superadmin: Error listing namespaces for empty deletion:', error);
+        res.status(500).json({ message: 'Failed to list namespaces for empty deletion.' });
+    }
+});
 
 // Mount the superadmin API router under /superadmin path, applying auth
 if (superadminUser && superadminPassword) {

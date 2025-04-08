@@ -1,0 +1,43 @@
+
+        <h1 class="text-3xl font-bold mb-6 text-center text-red-600" data-i18n="superadminTitle">VoteImage Superadmin</h1>
+
+        <div class="mb-6 flex flex-wrap gap-4">
+            <button id="refresh-btn" data-i18n="refreshListBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">Refresh List</button>
+            <button id="delete-empty-btn" data-i18n="deleteEmptyBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">Delete Empty Namespaces</button>
+            <button id="delete-all-btn" data-i18n="deleteAllBtn" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">Delete ALL Namespaces</button>
+            <button id="export-data-btn" data-i18n="exportDataBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">Export Data</button>
+        </div>
+
+        <div id="status-message" class="mb-4 text-center font-medium"></div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full w-full bg-white border border-gray-300">
+                <thead class="bg-gray-200">
+                    <tr>
+                        <th class="py-2 px-4 border-b text-left w-[15%]" data-i18n="tableHeaderNamespaceId">Namespace ID</th>
+                        <th class="py-2 px-4 border-b text-left w-[15%]" data-i18n="tableHeaderCreatedAt">Created At</th>
+                        <th class="py-2 px-4 border-b text-right w-[8%]" data-i18n="tableHeaderLogos">Logos</th>
+                        <th class="py-2 px-4 border-b text-right w-[8%]" data-i18n="tableHeaderVotes">Votes</th>
+                        <th class="py-2 px-4 border-b text-left w-[20%]" data-i18n="tableHeaderPublicLink">Public Link</th>
+                        <th class="py-2 px-4 border-b text-left w-[20%]" data-i18n="tableHeaderAdminLink">Admin Link</th>
+                        <th class="py-2 px-4 border-b text-left w-[14%]" data-i18n="tableHeaderFriendlyUrl">Friendly URL</th>
+                        <th class="py-2 px-4 border-b text-center w-[10%]" data-i18n="tableHeaderActions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="namespace-list">
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-gray-500" data-i18n="tableLoading">Loading namespaces...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mb-6 p-4 border border-gray-300 rounded bg-gray-50">
+            <h2 class="text-xl font-semibold mb-2" data-i18n="importDataTitle">Import Data</h2>
+            <p class="text-sm text-red-600 mb-2" data-i18n="importWarning">Warning: Importing will completely replace all current namespaces and logos.</p>
+            <form id="import-form" class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <input type="file" id="import-file-input" name="backupFile" accept=".zip" required class="flex-grow">
+                <button type="submit" id="import-data-btn" data-i18n="importDataBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out w-full sm:w-auto">Import Data</button>
+            </form>
+            <p id="import-status" class="mt-2 text-sm"></p>
+        </div>
