@@ -44,6 +44,81 @@
             text-decoration: none;
             cursor: default;
         }
+
+        /* === NEW: Responsive Table Styles === */
+        @media (max-width: 1024px) { /* Adjust breakpoint as needed */
+            /* Force table elements to behave like blocks */
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+
+            /* Hide table headers (but not display: none;, for accessibility) */
+            thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+
+            tr {
+                border: 1px solid #ccc;
+                margin-bottom: 0.5rem; /* Add space between stacked rows */
+                border-radius: 4px; /* Optional: rounded corners for blocks */
+                background-color: #f9f9f9; /* Optional: background for blocks */
+            }
+
+            td {
+                /* Behave like a "row" */
+                border: none;
+                border-bottom: 1px solid #eee;
+                position: relative;
+                padding-left: 50%; /* Make space for the label */
+                text-align: right; /* Align cell content to the right */
+                white-space: normal; /* Allow content wrapping */
+                min-height: 2.5em; /* Ensure cells have some height */
+                display: flex; /* Use flex for better vertical alignment */
+                align-items: center; /* Vertically center content */
+                justify-content: flex-end; /* Align content to the end (right) */
+            }
+            td:last-child {
+                 border-bottom: 0;
+            }
+
+            td::before {
+                /* Now like a table header */
+                position: absolute;
+                /* Top/left values mimic padding */
+                top: 0;
+                left: 6px;
+                width: 45%; /* Reserve space for the label */
+                padding-right: 10px;
+                white-space: nowrap; /* Prevent label wrapping */
+                content: attr(data-label); /* Use the data-label attribute */
+                font-weight: bold;
+                text-align: left; /* Align label text to the left */
+                height: 100%; /* Match cell height */
+                display: flex; /* Use flex for vertical alignment */
+                align-items: center; /* Vertically center label */
+            }
+
+             /* Adjust specific columns for better responsive display */
+             td[data-label*="Link"], /* Target Public and Admin Link */
+             td[data-label*="URL"] { /* Target Friendly URL */
+                word-break: break-all; /* Allow long links to break */
+             }
+             td[data-label*="Actions"] { /* Center the delete button */
+                 justify-content: center;
+                 padding-left: 6px; /* Reset padding-left */
+                 text-align: center;
+             }
+             td[data-label*="Actions"]::before {
+                  display: none; /* Hide label for actions column */
+             }
+             /* Remove fixed widths in responsive view */
+             th, td {
+                 width: auto !important;
+             }
+        }
+        /* === END NEW === */
     </style>
 </head>
 <body class="bg-gray-100 p-8 font-sans">
@@ -250,9 +325,9 @@
 
             if (ns.error) {
                 tr.innerHTML = `
-                    <td class="py-2 px-4 border-b">${ns.id}</td>
-                    <td class="py-2 px-4 border-b text-red-500" colspan="6">${t('tableErrorRow', { error: ns.error })}</td>
-                    <td class="py-2 px-4 border-b text-center">
+                    <td class="py-2 px-4 border-b" data-label="${t('tableHeaderNamespaceId')}">${ns.id}</td>
+                    <td class="py-2 px-4 border-b text-red-500" colspan="6" data-label="${t('tableErrorRow', { error: '' })}">${t('tableErrorRow', { error: ns.error })}</td>
+                    <td class="py-2 px-4 border-b text-center" data-label="${t('tableHeaderActions')}">
                         <button class="text-red-500 hover:text-red-700 font-semibold" onclick="handleDeleteSingle('${ns.id}')">${t('tableActionDelete')}</button>
                     </td>
                 `;
@@ -273,7 +348,7 @@
             const adminLink = ns.adminKey ? `${baseAppUrl}?namespace=${ns.id}&admin=${ns.adminKey}` : 'N/A';
             const adminLinkHtml = ns.adminKey
                 ? `<a href="${adminLink}" target="_blank" class="text-blue-600 hover:underline">${adminLink}</a>`
-                : '<span class="text-gray-400">N/A</span>';
+                : `<span class="text-gray-400">N/A</span>`;
 
             const friendlyUrl = ns.friendlyUrlName ? `${window.location.origin}/v/${ns.friendlyUrlName}` : null;
             const friendlyLinkHtml = friendlyUrl
@@ -281,14 +356,14 @@
                 : `<span class="text-gray-400">${t('tableFriendlyUrlNotSet')}</span>`;
 
             tr.innerHTML = `
-                <td class="py-2 px-4 border-b">${ns.id}</td>
-                <td class="py-2 px-4 border-b">${createdAtFormatted}</td>
-                <td class="py-2 px-4 border-b text-right">${ns.logoCount ?? 'N/A'}</td>
-                <td class="py-2 px-4 border-b text-right">${ns.totalVotes ?? 'N/A'}</td>
-                <td class="py-2 px-4 border-b"><a href="${publicLink}" target="_blank" class="text-blue-600 hover:underline">${publicLink}</a></td>
-                <td class="py-2 px-4 border-b">${adminLinkHtml}</td>
-                <td class="py-2 px-4 border-b">${friendlyLinkHtml}</td>
-                <td class="py-2 px-4 border-b text-center">
+                <td class="py-2 px-4 border-b" data-label="${t('tableHeaderNamespaceId')}">${ns.id}</td>
+                <td class="py-2 px-4 border-b" data-label="${t('tableHeaderCreatedAt')}">${createdAtFormatted}</td>
+                <td class="py-2 px-4 border-b text-right" data-label="${t('tableHeaderLogos')}">${ns.logoCount ?? 'N/A'}</td>
+                <td class="py-2 px-4 border-b text-right" data-label="${t('tableHeaderVotes')}">${ns.totalVotes ?? 'N/A'}</td>
+                <td class="py-2 px-4 border-b" data-label="${t('tableHeaderPublicLink')}"><a href="${publicLink}" target="_blank" class="text-blue-600 hover:underline">${publicLink}</a></td>
+                <td class="py-2 px-4 border-b" data-label="${t('tableHeaderAdminLink')}">${adminLinkHtml}</td>
+                <td class="py-2 px-4 border-b" data-label="${t('tableHeaderFriendlyUrl')}">${friendlyLinkHtml}</td>
+                <td class="py-2 px-4 border-b text-center" data-label="${t('tableHeaderActions')}">
                     <button class="text-red-500 hover:text-red-700 font-semibold" onclick="handleDeleteSingle('${ns.id}')">${t('tableActionDelete')}</button>
                 </td>
             `;
