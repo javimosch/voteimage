@@ -77,7 +77,6 @@ function t(key, params = {}) {
     return translation;
 }
 
-
 function translatePage() {
     // Translate elements with data-i18n attribute (textContent)
     document.querySelectorAll('[data-i18n]').forEach(element => {
@@ -114,14 +113,17 @@ function translatePage() {
         }
     });
 
-     // Special case: Translate button text directly if needed (e.g., vote button in grid)
-     // Note: This might be better handled when the element is created/updated
-     // document.querySelectorAll('.vote-button-class').forEach(btn => btn.textContent = t('voteBtn'));
+    // Special case: Translate button text directly if needed (e.g., vote button in grid)
+    // Note: This might be better handled when the element is created/updated
+    // document.querySelectorAll('.vote-button-class').forEach(btn => btn.textContent = t('voteBtn'));
+
+    // === NEW: Update footer identifier text during translation ===
+    updateIdentifierUI();
+    // === END NEW ===
 
     // Update language switcher visual state
     updateLanguageSwitcherUI();
 }
-
 
 async function setLanguage(lang) {
     if (!supportedLanguages.includes(lang) || lang === currentLanguage) {

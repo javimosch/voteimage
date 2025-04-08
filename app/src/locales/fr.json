@@ -132,5 +132,9 @@
   "namespaceDescription": "But du Vote",
   "statusDescriptionSaved": "Description enregistrée !",
   "statusVoteExists": "Vous avez déjà voté pour ce logo.",
-  "backToMainBtn": "Retour à la page d'accueil"
+  "backToMainBtn": "Retour à la page d'accueil",
+
+  "footerIdentify": "S'identifier",
+  "footerIdentified": "Identifié",
+  "footerLogout": "Déconnexion"
 }

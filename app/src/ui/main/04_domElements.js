@@ -68,5 +68,11 @@ const descriptionSaveStatus = document.getElementById('description-save-status')
 const langEnLink = document.getElementById('lang-en');
 const langFrLink = document.getElementById('lang-fr');
 
+// === NEW: Footer Identifier Elements ===
+const identifierFooterSection = document.getElementById('identifier-footer-section');
+const identifierStatusText = document.getElementById('identifier-status-text');
+const identifierActionBtn = document.getElementById('identifier-action-btn');
+// === END NEW ===
+
 // Base URL for API calls (assuming same origin)
 const apiUrl = '';

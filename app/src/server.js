@@ -14,7 +14,7 @@ const cron = require('node-cron');
 const basicAuth = require('express-basic-auth');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT||3000;
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const NAMESPACES_DIR = path.join(DATA_DIR, 'namespaces');

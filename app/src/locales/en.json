@@ -132,5 +132,9 @@
   "namespaceDescription": "Voting Purpose",
   "statusDescriptionSaved": "Description saved!",
   "statusVoteExists": "You have already voted for this logo.",
-  "backToMainBtn": "Back to Main"
+  "backToMainBtn": "Back to Main",
+
+  "footerIdentify": "Identify",
+  "footerIdentified": "Identified",
+  "footerLogout": "Logout"
 }

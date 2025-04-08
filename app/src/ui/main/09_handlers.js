@@ -81,14 +81,11 @@ async function handleUploadSubmit(event) {
 
 // Handles click on a "Vote" button in the logo grid
 function handleVoteClick(logoId) {
-    const identifierKey = `namespace-${currentNamespaceId}-identifier`;
-    const storedIdentifier = localStorage.getItem(identifierKey);
-
-    if (storedIdentifier) {
+    if (globalIdentifier) {
         // Identifier exists, proceed to vote directly
-        submitVote(logoId, storedIdentifier);
+        submitVote(logoId, globalIdentifier);
     } else {
-        // No identifier stored for this namespace, open modal
+        // No identifier stored globally, open modal with logo context
         openIdentifierModal(logoId);
     }
 }
@@ -100,27 +97,30 @@ function handleSubmitIdentifier() {
         modalError.textContent = t('modalErrorIdentifierEmpty');
         return;
     }
-    if (!currentLogoIdToVote) {
-        // Should not happen if modal opened correctly
-        modalError.textContent = t('modalErrorNoLogoSelected');
-        console.error("Submit identifier called without currentLogoIdToVote context.");
-        return;
-    }
-
     modalError.textContent = ''; // Clear previous errors
 
     // Encode identifier (simple Base64) - consider hashing if privacy is paramount
     // Note: Base64 is easily reversible.
     const encodedIdentifier = btoa(identifier);
 
-    // Store identifier in localStorage, scoped to namespace
-    const identifierKey = `namespace-${currentNamespaceId}-identifier`;
-    localStorage.setItem(identifierKey, encodedIdentifier);
+    // Store identifier globally in localStorage
+    const globalIdentifierKey = 'global-user-identifier';
+    localStorage.setItem(globalIdentifierKey, encodedIdentifier);
+    globalIdentifier = encodedIdentifier;
 
-    // Close modal and submit the vote
-    const logoIdToVote = currentLogoIdToVote; // Capture before closing modal clears it
+    // Update the footer UI
+    updateIdentifierUI();
+
+    // Close modal
+    const logoIdToVote = currentLogoIdToVote;
     closeIdentifierModal();
-    submitVote(logoIdToVote, encodedIdentifier); // Use the captured ID
+
+    // Submit the vote IF the modal was opened for voting (logoIdToVote is not null)
+    if (logoIdToVote) {
+        submitVote(logoIdToVote, encodedIdentifier);
+    } else {
+        setStatusMessage('Identifier set successfully.', false);
+    }
 }
 
 // Handles the actual vote submission process (called after identifier is known)
@@ -189,15 +189,11 @@ async function handlePasswordVerification() {
 function handleLogoViewerVoteClick() {
     if (currentLogoIndex !== -1 && currentLogoIndex < displayedLogos.length) {
         const logoId = displayedLogos[currentLogoIndex].id;
-        handleVoteClick(logoId); // Reuse existing vote logic (will open identifier modal if needed)
-         // Optionally close viewer after vote attempt?
-         // closeLogoViewer();
+        handleVoteClick(logoId);
     }
 }
 
-// Handles keyboard navigation within the logo viewer modal
 function handleLogoViewerKeydown(event) {
-    // Only act if the logo viewer modal is visible ('flex')
     if (logoViewerModal.style.display === 'flex') {
         switch (event.key) {
             case 'ArrowLeft':
@@ -209,9 +205,26 @@ function handleLogoViewerKeydown(event) {
             case 'Escape':
                 closeLogoViewer();
                 break;
-            case 'Enter': // Allow voting with Enter key maybe?
-                 // handleLogoViewerVoteClick();
-                 break;
+            case 'Enter':
+                // handleLogoViewerVoteClick();
+                break;
         }
     }
 }
+
+// === NEW: Handle Logout Click ===
+function handleLogout() {
+    const globalIdentifierKey = 'global-user-identifier';
+    localStorage.removeItem(globalIdentifierKey);
+    globalIdentifier = null;
+    updateIdentifierUI();
+    setStatusMessage('Logged out successfully.', false);
+    console.log("User logged out (identifier cleared).");
+}
+// === END NEW ===
+
+// === NEW: Handle Identify Click (from footer) ===
+function handleIdentifyClick() {
+    openIdentifierModal(null);
+}
+// === END NEW ===

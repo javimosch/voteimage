@@ -79,6 +79,54 @@ function createLogoElement(logo, index) {
     return div;
 }
 
+// === NEW: Function to Load and Display Logos ===
+async function loadLogos() {
+    if (!currentNamespaceId) return;
+
+    setStatusMessage('statusLoadingLogos', false);
+    logoGrid.innerHTML = ''; // Clear grid while loading
+    noLogosMessage.style.display = 'none'; // Hide message
+
+    try {
+        const responseData = await fetchLogosData(currentNamespaceId);
+
+        // Handle password protection BEFORE processing logos
+        if (responseData.isPasswordProtected && !namespacePasswordVerified) {
+            openPasswordModal(); // Ask for password
+            // Don't proceed with processing logos yet.
+            // processLogosResponse will be called after successful verification.
+            setStatusMessage('statusNamespaceProtected', false); // Inform user
+            return; // Stop further processing until password verified
+        }
+
+        // If not password protected, or already verified, process the logos
+        processLogosResponse(responseData);
+
+        // Update admin password status display if admin
+        if (isAdmin && passwordStatus) {
+            passwordStatus.textContent = responseData.isPasswordProtected ?
+                t('statusNamespaceProtected') :
+                t('statusNamespaceNotProtected');
+             passwordStatus.className = 'text-sm text-gray-600';
+        }
+
+    } catch (error) {
+        console.error('Error loading logos:', error);
+        if (error.status === 404) {
+            setStatusMessage('statusNamespaceNotFound', true);
+            // Optionally redirect or show a clearer "Not Found" view
+            showWelcomeView(); // Go back to welcome screen if namespace doesn't exist
+        } else {
+            setStatusMessage('statusError', true, { message: `Failed to load logos: ${error.message}` });
+        }
+        // Clear the grid and show appropriate message if needed
+        logoGrid.innerHTML = '';
+        noLogosMessage.textContent = t('statusError', { message: 'Could not load logos.' }); // Update no logos message
+        noLogosMessage.style.display = 'block';
+    }
+}
+// === END NEW ===
+
 // Processes the response from the /logos endpoint and updates the UI
 function processLogosResponse(responseData) {
     const logos = responseData.logos || [];
@@ -124,7 +172,6 @@ function processLogosResponse(responseData) {
     // Ensure the page is translated correctly after dynamic content update
     translatePage();
 }
-
 
 // Updates the friendly URL input and links based on current state
 function updateFriendlyUrlDisplay() {
@@ -222,3 +269,19 @@ function showNamespaceViewUI() {
     // Translate static elements shown in this view initially
     translatePage();
 }
+
+// === NEW: Update Footer Identifier UI ===
+function updateIdentifierUI() {
+    if (!identifierStatusText || !identifierActionBtn) return; // Ensure elements exist
+
+    if (globalIdentifier) {
+        identifierStatusText.textContent = `(${t('footerIdentified')})`; // Show (Identified)
+        identifierActionBtn.textContent = t('footerLogout'); // Show Logout button
+        identifierActionBtn.onclick = handleLogout; // Attach logout handler
+    } else {
+        identifierStatusText.textContent = ''; // Clear status text
+        identifierActionBtn.textContent = t('footerIdentify'); // Show Identify button
+        identifierActionBtn.onclick = handleIdentifyClick; // Attach identify handler
+    }
+}
+// === END NEW ===

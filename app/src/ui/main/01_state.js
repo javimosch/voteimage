@@ -1,5 +1,7 @@
 // Global state variables
 
+let globalIdentifier = null; // <-- NEW: Store the global identifier
+
 let isAdmin = false;
 let currentNamespaceId = null;
 let currentAdminKey = null;

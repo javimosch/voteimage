@@ -142,7 +142,7 @@
         <!-- Identifier Modal -->
         <div id="identifier-modal" class="modal">
             <div class="modal-content">
-                <span class="close-button" onclick="closeModal()">&times;</span>
+                <span class="close-button" onclick="closeIdentifierModal()">&times;</span>
                 <h3 class="text-lg font-semibold mb-3" data-i18n="identifierModalTitle">Enter Your Identifier</h3>
                 <p class="text-sm mb-4 text-gray-600" data-i18n="identifierModalInfo">Please provide a unique identifier
                     (e.g., email or phone number). We only use this to count votes and ensure one vote per logo within
@@ -208,6 +208,12 @@
 
     <footer class="text-center text-gray-500 mt-8">
 
+        <!-- === NEW: Identifier Status/Action === -->
+        <div id="identifier-footer-section" class="mb-2">
+            <span id="identifier-status-text"></span>
+            <button id="identifier-action-btn" class="text-blue-600 hover:text-blue-700 underline ml-1"></button>
+        </div>
+        <!-- === END NEW === -->
 
         <p><a href="/superadmin" class="text-blue-600 hover:text-blue-700 transition-colors duration-150">Superadmin</a></p>
 
