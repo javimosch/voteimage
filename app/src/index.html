@@ -191,7 +191,7 @@
                 <form id="upload-form" class="space-y-4">
                     <input type="file" id="logo-file-input" name="logoFiles" accept=".svg,.jpg,.jpeg,.png" required multiple 
                            class="block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                    <button type="submit" class="primary-button w-full md:w-auto" data-i18n="uploadBtn">Upload</button>
+                    <button type="submit" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out w-full md:w-auto" data-i18n="uploadBtn">Upload</button>
                 </form>
                 <p id="upload-status" class="mt-3 text-sm"></p>
             </div>
@@ -906,7 +906,7 @@
         async function handleDeleteLogo(logoId) {
             if (!isAdmin || !currentAdminKey || !currentNamespaceId) return;
 
-            if (!confirm(`Are you sure you want to delete logo ${logoId}? This cannot be undone.`)) {
+            if (!confirm(t('confirmDeleteLogo', { logoId }))) {
                 return;
             }
 
