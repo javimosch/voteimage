@@ -1,18 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title >$appName</title>
+    <title>$appName</title>
     <script defer data-domain="choisirlogo.enbauges.fr" src="https://psible.coolify.intrane.fr/js/script.js"></script>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Basic styling for modal */
-        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
-        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 400px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-        .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; transition: color 0.2s; }
-        .close-button:hover { color: #666; }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close-button:hover {
+            color: #666;
+        }
 
         /* Styling for Logo Viewer Modal */
         .logo-viewer-modal {
@@ -24,7 +56,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: rgba(0,0,0,0.9);
+            background-color: rgba(0, 0, 0, 0.9);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -32,6 +64,7 @@
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
         }
+
         .logo-viewer-modal.visible {
             opacity: 1;
         }
@@ -48,8 +81,10 @@
             justify-content: center;
             align-items: center;
             width: 100%;
-            position: absolute; /* Position controls relative to modal */
-            bottom: 2vh; /* Position at the bottom */
+            position: absolute;
+            /* Position controls relative to modal */
+            bottom: 2vh;
+            /* Position at the bottom */
             z-index: 1001;
         }
 
@@ -59,15 +94,19 @@
             transition: background-color 0.3s;
             z-index: 1002;
         }
+
         .logo-viewer-nav:hover {
             background-color: rgba(80, 80, 80, 0.8);
         }
+
         .logo-viewer-prev {
             left: 2vw;
         }
+
         .logo-viewer-next {
             right: 2vw;
         }
+
         .logo-viewer-nav.disabled {
             opacity: 0.3;
             cursor: not-allowed;
@@ -79,6 +118,7 @@
             transition: background-color 0.3s;
             margin: 0 10px;
         }
+
         @media (max-width: 640px) {
             .logo-viewer-vote-btn {
                 @apply px-4 py-2 text-sm;
@@ -94,25 +134,30 @@
             font-weight: bold;
             transition: 0.3s;
             cursor: pointer;
-            z-index: 1001; /* Above the image */
+            z-index: 1001;
+            /* Above the image */
         }
 
         /* Enhanced language switcher */
         .lang-switcher {
             @apply flex justify-end space-x-2 text-sm md:text-base;
         }
+
         .lang-switcher a {
             @apply px-3 py-1 rounded transition-all duration-150 cursor-pointer;
             position: relative;
         }
+
         .lang-switcher a.active {
             background-color: #3B82F6;
             color: white;
             font-weight: 600;
         }
+
         .lang-switcher a:not(.active):hover {
             background-color: #F1F1F1;
         }
+
         .lang-switcher a::after {
             content: '';
             position: absolute;
@@ -124,79 +169,90 @@
             transition: all 0.3s ease;
             transform: translateX(-50%);
         }
+
         .lang-switcher a:not(.active):hover::after {
             width: 100%;
         }
     </style>
 </head>
+
 <body class="bg-gray-100 p-8 font-sans">
 
-        <div class="lang-switcher mb-4 flex justify-end space-x-2">
-            <a id="lang-en" class="px-3 py-1 rounded transition-colors duration-150 cursor-pointer">EN</a>
-            <a id="lang-fr" class="px-3 py-1 rounded transition-colors duration-150 cursor-pointer">FR</a>
-        </div>
-        <div class="container mx-auto bg-white p-6 rounded-lg shadow-md">
-        
-        
-        
-            <a href="/">
-                <h1 class="text-3xl font-bold mb-6 text-center text-blue-600 hover:text-blue-700 transition-colors duration-150" >$appName</h1>
-            </a>
+    <div class="lang-switcher mb-4 flex justify-end space-x-2">
+        <a id="lang-en" class="px-3 py-1 rounded transition-colors duration-150 cursor-pointer">EN</a>
+        <a id="lang-fr" class="px-3 py-1 rounded transition-colors duration-150 cursor-pointer">FR</a>
+    </div>
+    <div style="min-height: 80vh" class="container mx-auto bg-white p-6 rounded-lg shadow-md">
+
+
+
+        <a href="/">
+            <h1
+                class="text-3xl font-bold mb-6 text-center text-blue-600 hover:text-blue-700 transition-colors duration-150">
+                $appName</h1>
+        </a>
 
         <!-- Namespace Info with enhanced styling -->
-        <div id="namespace-info" class="mb-6 p-6 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg shadow-sm">
-            
+        <div id="namespace-info"
+            class="mb-6 p-6 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg shadow-sm">
+
             <div id="admin-controls-section" class="hidden mt-4 space-y-4">
                 <h2 class="text-xl font-semibold mb-2" data-i18n="currentNamespace">Current Namespace</h2>
                 <p id="current-namespace-id" class="mb-2 font-mono bg-gray-100 p-2 rounded">Loading...</p>
                 <h3 class="font-semibold text-lg text-red-600" data-i18n="adminControls">Admin Controls</h3>
                 <div>
-                    <label for="friendly-url-input" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="friendlyUrlLabel">Friendly URL Name:</label>
+                    <label for="friendly-url-input" class="block text-sm font-medium text-gray-700 mb-1"
+                        data-i18n="friendlyUrlLabel">Friendly URL Name:</label>
                     <div class="flex items-center space-x-2 md:flex-row flex-col-reverse gap-2">
-                        <input type="text" id="friendly-url-input" data-i18n-placeholder="friendlyUrlPlaceholder" placeholder="e.g., my-cool-event" class="flex-grow p-2 border border-gray-300 rounded shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm md:text-base md:w-auto w-full">
-                        <button id="set-friendly-url-btn" data-i18n="setFriendlyUrlBtn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">Set Name</button>
+                        <input type="text" id="friendly-url-input" data-i18n-placeholder="friendlyUrlPlaceholder"
+                            placeholder="e.g., my-cool-event"
+                            class="flex-grow p-2 border border-gray-300 rounded shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm md:text-base md:w-auto w-full">
+                        <button id="set-friendly-url-btn" data-i18n="setFriendlyUrlBtn"
+                            class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">Set
+                            Name</button>
                     </div>
-                    <p id="friendly-url-status" data-i18n-base="currentFriendlyUrl" class="mt-1 text-sm text-gray-600">Current: <span id="current-friendly-url" class="font-medium">None</span></p>
+                    <p id="friendly-url-status" data-i18n-base="currentFriendlyUrl" class="mt-1 text-sm text-gray-600">
+                        Current: <span id="current-friendly-url" class="font-medium">None</span></p>
                 </div>
                 <div>
-                    <button id="clear-votes-btn" data-i18n="clearVotesBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">Clear All Votes</button>
-                    <button id="delete-namespace-btn" data-i18n="deleteNamespaceBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">Delete This Namespace</button>
+                    <button id="clear-votes-btn" data-i18n="clearVotesBtn"
+                        class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">Clear
+                        All Votes</button>
+                    <button id="delete-namespace-btn" data-i18n="deleteNamespaceBtn"
+                        class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">Delete
+                        This Namespace</button>
                 </div>
-                
+
                 <!-- === NEW: Namespace Description Admin Controls === -->
                 <div id="description-controls" class="mt-6 space-y-4 border-t pt-4">
-                  <h3 class="font-semibold text-lg" data-i18n="descriptionControls">Namespace Description</h3>
-                  <div>
-                    <label for="description-input" class="block text-sm font-medium text-gray-700 mb-1">
-                      <span data-i18n="descriptionLabel">Namespace Description:</span>
-                    </label>
-                    <textarea
-                      id="description-input"
-                      class="w-full p-2 border border-gray-300 rounded h-32 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                      data-i18n-placeholder="descriptionPlaceholder"
-                      placeholder="Describe this vote purpose..."
-                      maxlength="500"
-                    ></textarea>
-                    <div class="flex justify-between items-center mt-2">
-                      <button
-                        id="save-description-btn"
-                        class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out"
-                        data-i18n="saveDescriptionBtn"
-                      >
-                        Save Description
-                      </button>
-                      <p id="description-status" class="text-sm text-gray-600">
-                        <span data-i18n="characterCount">Characters:</span>
-                        <span id="character-count">0</span>/500
-                      </p>
+                    <h3 class="font-semibold text-lg" data-i18n="descriptionControls">Namespace Description</h3>
+                    <div>
+                        <label for="description-input" class="block text-sm font-medium text-gray-700 mb-1">
+                            <span data-i18n="descriptionLabel">Namespace Description:</span>
+                        </label>
+                        <textarea id="description-input"
+                            class="w-full p-2 border border-gray-300 rounded h-32 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                            data-i18n-placeholder="descriptionPlaceholder" placeholder="Describe this vote purpose..."
+                            maxlength="500"></textarea>
+                        <div class="flex justify-between items-center mt-2">
+                            <button id="save-description-btn"
+                                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out"
+                                data-i18n="saveDescriptionBtn">
+                                Save Description
+                            </button>
+                            <p id="description-status" class="text-sm text-gray-600">
+                                <span data-i18n="characterCount">Characters:</span>
+                                <span id="character-count">0</span>/500
+                            </p>
+                        </div>
+                        <p id="description-save-status" class="mt-1 text-sm h-4"></p> <!-- For save status messages -->
                     </div>
-                    <p id="description-save-status" class="mt-1 text-sm h-4"></p> <!-- For save status messages -->
-                  </div>
                 </div>
                 <!-- === END NEW === -->
             </div>
             <!-- === NEW: Namespace Description Display Area === -->
-            <div id="namespace-description-display-section" class="mb-6 p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-200 hidden">
+            <div id="namespace-description-display-section"
+                class="mb-6 p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-200 hidden">
                 <h3 class="font-semibold mb-2 text-lg" data-i18n="namespaceDescription">Voting Purpose</h3>
                 <p id="namespace-description-text" class="text-gray-700 whitespace-pre-wrap">
                     <!-- Description will be loaded here -->
@@ -209,15 +265,19 @@
                 <div class="space-y-2">
                     <p class="flex flex-col md:flex-row md:items-center gap-2">
                         <strong class="md:w-24" data-i18n="votingLink">Voting Link:</strong>
-                        <a id="voting-link" href="#" class="text-blue-500 hover:text-blue-600 break-all font-mono text-sm" target="_blank"></a>
+                        <a id="voting-link" href="#"
+                            class="text-blue-500 hover:text-blue-600 break-all font-mono text-sm" target="_blank"></a>
                     </p>
                     <p id="friendly-link-p" class="hidden flex flex-col md:flex-row md:items-center gap-2">
                         <strong class="md:w-24" data-i18n="friendlyLink">Friendly Link:</strong>
-                        <a id="friendly-link" href="#" class="text-purple-600 hover:text-purple-700 break-all font-mono text-sm" target="_blank"></a>
+                        <a id="friendly-link" href="#"
+                            class="text-purple-600 hover:text-purple-700 break-all font-mono text-sm"
+                            target="_blank"></a>
                     </p>
                     <p class="flex flex-col md:flex-row md:items-center gap-2">
                         <strong class="md:w-24" data-i18n="adminLink">Admin Link:</strong>
-                        <a id="admin-link" href="#" class="text-red-500 hover:text-red-600 break-all font-mono text-sm" target="_blank"></a>
+                        <a id="admin-link" href="#" class="text-red-500 hover:text-red-600 break-all font-mono text-sm"
+                            target="_blank"></a>
                         <span class="text-sm text-gray-600 italic" data-i18n="adminLinkNote">(Keep this safe!)</span>
                     </p>
                 </div>
@@ -226,8 +286,11 @@
 
         <!-- Create Namespace Section -->
         <div id="create-namespace-section" class="mb-8 text-center">
-            <p id="welcome-message" class="mb-6 text-lg text-gray-700" data-i18n="welcomeMessage">Welcome! Create a new voting namespace or access an existing one using the URL.</p>
-            <button id="create-namespace-btn" type="button" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out w-full md:w-auto" data-i18n="createNamespaceBtn">Create New Vote Namespace</button>
+            <p id="welcome-message" class="mb-6 text-lg text-gray-700" data-i18n="welcomeMessage">Welcome! Create a new
+                voting namespace or access an existing one using the URL.</p>
+            <button id="create-namespace-btn" type="button"
+                class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out w-full md:w-auto"
+                data-i18n="createNamespaceBtn">Create New Vote Namespace</button>
         </div>
 
         <!-- Upload Section with enhanced styling -->
@@ -235,9 +298,12 @@
             <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                 <h2 class="text-xl font-semibold mb-4" data-i18n="uploadLogosTitle">Upload New Logo(s)</h2>
                 <form id="upload-form" class="space-y-4">
-                    <input type="file" id="logo-file-input" name="logoFiles" accept=".svg,.jpg,.jpeg,.png" required multiple 
-                           class="block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                    <button type="submit" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out w-full md:w-auto" data-i18n="uploadBtn">Upload</button>
+                    <input type="file" id="logo-file-input" name="logoFiles" accept=".svg,.jpg,.jpeg,.png" required
+                        multiple
+                        class="block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    <button type="submit"
+                        class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out w-full md:w-auto"
+                        data-i18n="uploadBtn">Upload</button>
                 </form>
                 <p id="upload-status" class="mt-3 text-sm"></p>
             </div>
@@ -249,7 +315,8 @@
             <div id="logo-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 <!-- Logos will be loaded here -->
             </div>
-            <p id="no-logos-message" class="text-center text-gray-500 mt-8 hidden" data-i18n="noLogosMessage">No logos uploaded yet for this namespace.</p>
+            <p id="no-logos-message" class="text-center text-gray-500 mt-8 hidden" data-i18n="noLogosMessage">No logos
+                uploaded yet for this namespace.</p>
         </div>
 
         <!-- Identifier Modal -->
@@ -257,9 +324,14 @@
             <div class="modal-content">
                 <span class="close-button" onclick="closeModal()">&times;</span>
                 <h3 class="text-lg font-semibold mb-3" data-i18n="identifierModalTitle">Enter Your Identifier</h3>
-                <p class="text-sm mb-4 text-gray-600" data-i18n="identifierModalInfo">Please provide a unique identifier (e.g., email or phone number). We only use this to count votes and ensure one vote per logo within this namespace. It is stored securely.</p>
-                <input type="text" id="identifier-input" data-i18n-placeholder="identifierPlaceholder" placeholder="Your email or phone" class="w-full p-2 border border-gray-300 rounded mb-4">
-                <button id="submit-identifier-btn" data-i18n="submitIdentifierBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded w-full transition duration-150 ease-in-out">Submit and Vote</button>
+                <p class="text-sm mb-4 text-gray-600" data-i18n="identifierModalInfo">Please provide a unique identifier
+                    (e.g., email or phone number). We only use this to count votes and ensure one vote per logo within
+                    this namespace. It is stored securely.</p>
+                <input type="text" id="identifier-input" data-i18n-placeholder="identifierPlaceholder"
+                    placeholder="Your email or phone" class="w-full p-2 border border-gray-300 rounded mb-4">
+                <button id="submit-identifier-btn" data-i18n="submitIdentifierBtn"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded w-full transition duration-150 ease-in-out">Submit
+                    and Vote</button>
                 <p id="modal-error" class="text-red-500 text-sm mt-2"></p>
             </div>
         </div>
@@ -269,9 +341,12 @@
             <div class="modal-content">
                 <span class="close-button" onclick="closePasswordModal()">&times;</span>
                 <h3 class="text-lg font-semibold mb-3" data-i18n="passwordModalTitle">Enter Namespace Password</h3>
-                <p class="text-sm mb-4 text-gray-600" data-i18n="passwordModalInfo">This namespace is password protected. Please enter the password to continue.</p>
-                <input type="password" id="password-input" data-i18n-placeholder="passwordPlaceholder" placeholder="Enter password" class="w-full p-2 border border-gray-300 rounded mb-4">
-                <button id="submit-password-btn" data-i18n="submitPasswordBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded w-full transition duration-150 ease-in-out">Submit</button>
+                <p class="text-sm mb-4 text-gray-600" data-i18n="passwordModalInfo">This namespace is password
+                    protected. Please enter the password to continue.</p>
+                <input type="password" id="password-input" data-i18n-placeholder="passwordPlaceholder"
+                    placeholder="Enter password" class="w-full p-2 border border-gray-300 rounded mb-4">
+                <button id="submit-password-btn" data-i18n="submitPasswordBtn"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded w-full transition duration-150 ease-in-out">Submit</button>
                 <p id="password-modal-error" class="text-red-500 text-sm mt-2"></p>
             </div>
         </div>
@@ -281,8 +356,11 @@
             <h3 class="font-semibold text-lg mb-3" data-i18n="passwordProtectionTitle">Password Protection</h3>
             <div class="space-y-2">
                 <div class="flex items-center gap-2">
-                    <input type="password" id="set-password-input" data-i18n-placeholder="setPasswordPlaceholder" placeholder="Set namespace password" class="flex-grow p-2 border border-gray-300 rounded">
-                    <button id="set-password-btn" data-i18n="setPasswordBtn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">Set Password</button>
+                    <input type="password" id="set-password-input" data-i18n-placeholder="setPasswordPlaceholder"
+                        placeholder="Set namespace password" class="flex-grow p-2 border border-gray-300 rounded">
+                    <button id="set-password-btn" data-i18n="setPasswordBtn"
+                        class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">Set
+                        Password</button>
                 </div>
                 <p id="password-status" class="text-sm text-gray-600"></p>
             </div>
@@ -295,18 +373,34 @@
             <img class="logo-viewer-content" id="logo-viewer-img">
             <button id="logo-viewer-next" class="logo-viewer-nav logo-viewer-next">&#10095;</button>
             <div class="logo-viewer-controls">
-                 <button id="logo-viewer-vote-btn" data-i18n="logoViewerVoteBtn" class="logo-viewer-vote-btn">Vote for this Logo</button>
+                <button id="logo-viewer-vote-btn" data-i18n="logoViewerVoteBtn" class="logo-viewer-vote-btn">Vote for
+                    this Logo</button>
             </div>
         </div>
 
         <!-- Status Message Area -->
         <div id="status-message" class="mt-6 text-center font-medium status-message"></div>
 
+
+
+
     </div>
+            
+    <footer class="text-center text-gray-500 mt-8">
+
+        
+        <p><a href="/superadmin" class="text-blue-600 hover:text-blue-700 transition-colors duration-150">Superadmin</a></p>
+
+        <p>$appName 2025 | Clone at <a href="https://github.com/javimosch/voteimage" target="_blank"
+                class="text-blue-600 hover:text-blue-700 transition-colors duration-150">GitHub</a></p>
+        <!-- Created by Savoietech.fr -->
+        <p>Created by <a href="https://savoietech.fr" target="_blank"
+                class="text-blue-600 hover:text-blue-700 transition-colors duration-150">Savoietech.fr</a></p>
+    </footer>
 
     <script>
         let isAdmin = false;
-        
+
         // --- I18N START ---
         const supportedLanguages = ['en', 'fr'];
         let currentLanguage = 'en';
@@ -323,24 +417,24 @@
                 return 'fr'; // Fallback to French
             }
         }
-        
+
         function getPreferredLanguage() {
             // Check localStorage first
             const storedLang = localStorage.getItem('preferredLanguage');
             if (storedLang && supportedLanguages.includes(storedLang)) {
                 return storedLang;
             }
-            
+
             // Then check browser language
             const browserLang = navigator.language.split('-')[0];
             if (supportedLanguages.includes(browserLang)) {
                 return browserLang;
             }
-        
+
             // Return default (will be set during initialization)
             return currentLanguage;
         }
-        
+
         function updateLanguageSwitcher() {
             document.querySelectorAll('.lang-switcher a').forEach(a => {
                 const lang = a.id.split('-')[1];
@@ -444,7 +538,7 @@
             await loadTranslations(lang);
             translatePage();
             updateLanguageSwitcher(); // Make sure to call this after changing language
-            
+
             if (currentNamespaceId) {
                 await loadLogos();
                 const currentStatusText = statusMessage.textContent;
@@ -464,11 +558,11 @@
                     },
                     body: JSON.stringify({ description }),
                 });
-                
+
                 if (!response.ok) {
                     throw new Error('Failed to save namespace description');
                 }
-                
+
                 const data = await response.json();
                 descriptionSaveStatus.textContent = t('statusDescriptionSaved');
                 setTimeout(() => {
@@ -534,23 +628,23 @@
         const characterCountSpan = document.getElementById('character-count');
         const descriptionSaveStatus = document.getElementById('description-save-status');
         // === END NEW ===
-            // Password protection variables
-            const passwordModal = document.getElementById('password-modal');
-            const passwordInput = document.getElementById('password-input');
-            const submitPasswordBtn = document.getElementById('submit-password-btn');
-            const passwordModalError = document.getElementById('password-modal-error');
-            const passwordControls = document.getElementById('password-controls');
-            const setPasswordInput = document.getElementById('set-password-input');
-            const setPasswordBtn = document.getElementById('set-password-btn');
-            const passwordStatus = document.getElementById('password-status');
-            let namespacePasswordVerified = false;
+        // Password protection variables
+        const passwordModal = document.getElementById('password-modal');
+        const passwordInput = document.getElementById('password-input');
+        const submitPasswordBtn = document.getElementById('submit-password-btn');
+        const passwordModalError = document.getElementById('password-modal-error');
+        const passwordControls = document.getElementById('password-controls');
+        const setPasswordInput = document.getElementById('set-password-input');
+        const setPasswordBtn = document.getElementById('set-password-btn');
+        const passwordStatus = document.getElementById('password-status');
+        let namespacePasswordVerified = false;
 
-            // Initialize password controls - they're already in the DOM
-            // Just need to show/hide based on admin status
+        // Initialize password controls - they're already in the DOM
+        // Just need to show/hide based on admin status
 
         let currentNamespaceId = null;
         let currentAdminKey = null;
-        
+
         let displayedLogos = []; // To store the current list of logos
         let currentLogoIndex = -1; // Index of the logo currently shown in the viewer
         let currentFriendlyUrlName = null; // Store current friendly name
@@ -561,22 +655,22 @@
             // --- I18N START ---
             // Set default language first
             currentLanguage = await getDefaultLanguage();
-            
+
             // Then check for user preference
             const preferredLang = getPreferredLanguage();
             if (preferredLang !== currentLanguage) {
                 currentLanguage = preferredLang;
             }
-            
+
             await loadTranslations(currentLanguage);
             translatePage();
             updateLanguageSwitcher(); // Make sure this is called after setting the language
-            
+
             // Attach language switcher listeners
             document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
             document.getElementById('lang-fr').addEventListener('click', () => setLanguage('fr'));
             // --- I18N END ---
-        
+
             const urlParams = new URLSearchParams(window.location.search);
             currentNamespaceId = urlParams.get('namespace');
             currentAdminKey = urlParams.get('admin'); // Might be null
@@ -627,7 +721,7 @@
             // and fetched data (logos) will be translated after fetch.
             translatePage();
             // --- END I18N ---
-        
+
             currentNamespaceIdP.textContent = `Namespace ID: ${currentNamespaceId}`; // Keep this non-translated
             namespaceInfoDiv.style.display = 'block';
             uploadSection.style.display = 'block';
@@ -673,53 +767,53 @@
                 if (!response.ok) {
                     // Handle 404 specifically for namespace not found
                     if (response.status === 404) {
-                              // --- I18N: Use translation key ---
-                         setStatusMessage('statusNamespaceNotFound', true);
-                         showWelcomeView(); // Go back to welcome if namespace invalid
-                         return null; // Indicate failure clearly
+                        // --- I18N: Use translation key ---
+                        setStatusMessage('statusNamespaceNotFound', true);
+                        showWelcomeView(); // Go back to welcome if namespace invalid
+                        return null; // Indicate failure clearly
                     }
                     throw new Error(`Failed to fetch logos: ${response.statusText}`);
                 }
                 return await response.json(); // Returns { logos: [], friendlyUrlName: "..." }
             } catch (error) {
                 console.error('Error fetching logos:', error);
-                 // --- I18N: Use translation key ---
+                // --- I18N: Use translation key ---
                 setStatusMessage('statusError', true, { message: `loading logos: ${error.message}` });
                 return null; // Indicate failure
             }
         }
 
         async function loadLogos() {
-                if (!currentNamespaceId) return;
-                setStatusMessage('Loading logos...', false);
-                logoGrid.innerHTML = '';
-                noLogosMessage.style.display = 'none';
-                displayedLogos = [];
+            if (!currentNamespaceId) return;
+            setStatusMessage('Loading logos...', false);
+            logoGrid.innerHTML = '';
+            noLogosMessage.style.display = 'none';
+            displayedLogos = [];
 
-                try {
-                    const response = await fetch(`${apiUrl}/logos?namespace=${currentNamespaceId}`);
-                    if (!response.ok) {
-                        if (response.status === 404) {
-                            setStatusMessage('Namespace not found.', true);
-                            showWelcomeView();
-                            return;
-                        }
-                        throw new Error(`Failed to fetch logos: ${response.statusText}`);
-                    }
-
-                    const data = await response.json();
-
-                    // Check if namespace is password protected and not yet verified
-                    if (data.isPasswordProtected && !namespacePasswordVerified && !isAdmin) {
-                        openPasswordModal();
+            try {
+                const response = await fetch(`${apiUrl}/logos?namespace=${currentNamespaceId}`);
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        setStatusMessage('Namespace not found.', true);
+                        showWelcomeView();
                         return;
                     }
-
-                    processLogosResponse(data);
-                } catch (error) {
-                    console.error('Error loading logos:', error);
-                    setStatusMessage(`Error: ${error.message}`, true);
+                    throw new Error(`Failed to fetch logos: ${response.statusText}`);
                 }
+
+                const data = await response.json();
+
+                // Check if namespace is password protected and not yet verified
+                if (data.isPasswordProtected && !namespacePasswordVerified && !isAdmin) {
+                    openPasswordModal();
+                    return;
+                }
+
+                processLogosResponse(data);
+            } catch (error) {
+                console.error('Error loading logos:', error);
+                setStatusMessage(`Error: ${error.message}`, true);
+            }
         }
 
         function createLogoElement(logo, index) { // Accept index
@@ -843,7 +937,7 @@
             } catch (error) {
                 console.error('Error creating namespace:', error);
                 setStatusMessage(`Error: ${error.message}`, true);
-                 namespaceLinksDiv.style.display = 'none'; // Hide links on error
+                namespaceLinksDiv.style.display = 'none'; // Hide links on error
             }
         }
 
@@ -856,7 +950,7 @@
             }
             if (!logoFileInput.files || logoFileInput.files.length === 0) {
                 uploadStatus.textContent = 'Please select one or more files to upload.';
-                 uploadStatus.className = 'mt-2 text-sm text-yellow-600';
+                uploadStatus.className = 'mt-2 text-sm text-yellow-600';
                 return;
             }
 
@@ -867,7 +961,7 @@
             try {
                 const formData = new FormData();
                 for (let i = 0; i < logoFileInput.files.length; i++) {
-                     formData.append('logoFiles', logoFileInput.files[i]); // Use the name matching backend array
+                    formData.append('logoFiles', logoFileInput.files[i]); // Use the name matching backend array
                 }
                 // Alternatively, simpler:
                 // const formData = new FormData(uploadForm); // If input name is correct
@@ -886,17 +980,17 @@
 
                 // Handle full or partial success
                 if (response.status === 201) { // All successful
-                     uploadStatus.textContent = `Success: ${result.message}`;
-                     uploadStatus.className = 'mt-2 text-sm text-green-600';
+                    uploadStatus.textContent = `Success: ${result.message}`;
+                    uploadStatus.className = 'mt-2 text-sm text-green-600';
                 } else if (response.status === 207) { // Partial success
-                     uploadStatus.textContent = `Partial Success: ${result.message}`;
-                     uploadStatus.className = 'mt-2 text-sm text-yellow-600';
-                     // Optionally display more details about errors from result.errors
-                     console.warn("Upload errors:", result.errors);
+                    uploadStatus.textContent = `Partial Success: ${result.message}`;
+                    uploadStatus.className = 'mt-2 text-sm text-yellow-600';
+                    // Optionally display more details about errors from result.errors
+                    console.warn("Upload errors:", result.errors);
                 } else {
-                     // Should be caught by the !response.ok check, but as a fallback
-                     uploadStatus.textContent = `Success: ${result.message || 'Upload processed.'}`;
-                     uploadStatus.className = 'mt-2 text-sm text-green-600';
+                    // Should be caught by the !response.ok check, but as a fallback
+                    uploadStatus.textContent = `Success: ${result.message || 'Upload processed.'}`;
+                    uploadStatus.className = 'mt-2 text-sm text-green-600';
                 }
 
                 logoFileInput.value = ''; // Clear the input
@@ -932,8 +1026,8 @@
                 return;
             }
             if (!currentLogoIdToVote) {
-                 modalError.textContent = 'Error: No logo selected for voting.';
-                 return;
+                modalError.textContent = 'Error: No logo selected for voting.';
+                return;
             }
 
             modalError.textContent = ''; // Clear previous errors
@@ -953,8 +1047,8 @@
         }
 
         async function submitVote(logoId, identifier) {
-             if (!currentNamespaceId) return;
-             setStatusMessage('Submitting vote...', false);
+            if (!currentNamespaceId) return;
+            setStatusMessage('Submitting vote...', false);
 
             try {
                 const response = await fetch(`${apiUrl}/vote?namespace=${currentNamespaceId}`, {
@@ -968,9 +1062,9 @@
                 const result = await response.json();
 
                 if (!response.ok) {
-                     // Handle specific conflict case (already voted)
+                    // Handle specific conflict case (already voted)
                     if (response.status === 409) {
-                         setStatusMessage(t('statusVoteExists'), true);
+                        setStatusMessage(t('statusVoteExists'), true);
                     } else {
                         throw new Error(result.message || `Vote failed: ${response.statusText}`);
                     }
@@ -981,13 +1075,13 @@
                     if (voteCountElement) {
                         voteCountElement.textContent = `Votes: ${result.votes}`;
                     }
-                     // Update the stored logo data as well, so cycling shows correct count if we re-fetch later
-                     const logoIndex = displayedLogos.findIndex(l => l.id === logoId);
-                     if (logoIndex !== -1) {
-                         // Note: This assumes the identifier wasn't already present.
-                         // A more robust approach might re-fetch the specific logo's data.
-                         displayedLogos[logoIndex].votes = result.votes;
-                     }
+                    // Update the stored logo data as well, so cycling shows correct count if we re-fetch later
+                    const logoIndex = displayedLogos.findIndex(l => l.id === logoId);
+                    if (logoIndex !== -1) {
+                        // Note: This assumes the identifier wasn't already present.
+                        // A more robust approach might re-fetch the specific logo's data.
+                        displayedLogos[logoIndex].votes = result.votes;
+                    }
                 }
 
             } catch (error) {
@@ -1024,7 +1118,7 @@
         }
 
         async function handleClearVotes() {
-             if (!isAdmin || !currentAdminKey || !currentNamespaceId) return;
+            if (!isAdmin || !currentAdminKey || !currentNamespaceId) return;
 
             if (!confirm('Are you sure you want to clear ALL votes for this namespace? This cannot be undone.')) {
                 return;
@@ -1035,7 +1129,7 @@
                 const response = await fetch(`${apiUrl}/clear-votes?namespace=${currentNamespaceId}&admin=${currentAdminKey}`, {
                     method: 'POST',
                 });
-                 const result = await response.json();
+                const result = await response.json();
                 if (!response.ok) {
                     throw new Error(result.message || `Failed to clear votes: ${response.statusText}`);
                 }
@@ -1048,18 +1142,18 @@
         }
 
         async function handleDeleteNamespace() {
-             if (!isAdmin || !currentAdminKey || !currentNamespaceId) return;
+            if (!isAdmin || !currentAdminKey || !currentNamespaceId) return;
 
             if (!confirm('WARNING: Are you sure you want to delete this ENTIRE namespace, including all logos and votes? This cannot be undone.')) {
                 return;
             }
 
-             setStatusMessage('Deleting namespace...', false);
+            setStatusMessage('Deleting namespace...', false);
             try {
                 const response = await fetch(`${apiUrl}/namespace?namespace=${currentNamespaceId}&admin=${currentAdminKey}`, {
                     method: 'DELETE',
                 });
-                 const result = await response.json();
+                const result = await response.json();
                 if (!response.ok) {
                     throw new Error(result.message || `Failed to delete namespace: ${response.statusText}`);
                 }
@@ -1124,7 +1218,7 @@
         }
 
         function handleKeydown(event) {
-             // Only act if the logo viewer modal is visible
+            // Only act if the logo viewer modal is visible
             if (logoViewerModal.style.display === 'flex') {
                 if (event.key === 'ArrowLeft') {
                     showPreviousLogo();
@@ -1147,96 +1241,96 @@
         }
 
         // Close modal if user clicks outside of it
-        window.onclick = function(event) {
+        window.onclick = function (event) {
             if (event.target == passwordModal) {
-                    closePasswordModal();
-                }
+                closePasswordModal();
+            }
             if (event.target == identifierModal) {
                 closeModal();
             }
             if (event.target == logoViewerModal) {
-                 closeLogoViewer();
+                closeLogoViewer();
             }
         }
 
-            // Password Modal Control
-            function openPasswordModal() {
-                passwordModalError.textContent = '';
-                passwordInput.value = '';
-                passwordModal.style.display = 'block';
-            }
+        // Password Modal Control
+        function openPasswordModal() {
+            passwordModalError.textContent = '';
+            passwordInput.value = '';
+            passwordModal.style.display = 'block';
+        }
 
-            function closePasswordModal() {
-                passwordModal.style.display = 'none';
-            }
+        function closePasswordModal() {
+            passwordModal.style.display = 'none';
+        }
 
-            // Handle password verification
-            async function verifyPassword(password) {
-                try {
-                    const response = await fetch(`${apiUrl}/namespace/verify-password?namespace=${currentNamespaceId}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ password }),
-                    });
+        // Handle password verification
+        async function verifyPassword(password) {
+            try {
+                const response = await fetch(`${apiUrl}/namespace/verify-password?namespace=${currentNamespaceId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ password }),
+                });
 
-                    const result = await response.json();
-                    
-                    if (response.ok && result.verified) {
-                        namespacePasswordVerified = true;
-                        closePasswordModal();
-                        await loadLogos(); // Reload logos after verification
-                    } else {
-                        passwordModalError.textContent = result.message || 'Invalid password.';
-                    }
-                } catch (error) {
-                    console.error('Error verifying password:', error);
-                    passwordModalError.textContent = 'Failed to verify password.';
+                const result = await response.json();
+
+                if (response.ok && result.verified) {
+                    namespacePasswordVerified = true;
+                    closePasswordModal();
+                    await loadLogos(); // Reload logos after verification
+                } else {
+                    passwordModalError.textContent = result.message || 'Invalid password.';
                 }
+            } catch (error) {
+                console.error('Error verifying password:', error);
+                passwordModalError.textContent = 'Failed to verify password.';
             }
+        }
 
-            // Handle setting namespace password
-            async function handleSetPassword() {
-                if (!isAdmin || !currentAdminKey || !currentNamespaceId) return;
+        // Handle setting namespace password
+        async function handleSetPassword() {
+            if (!isAdmin || !currentAdminKey || !currentNamespaceId) return;
 
-                const password = setPasswordInput.value;
-                passwordStatus.textContent = 'Setting password...';
-                passwordStatus.className = 'text-sm text-blue-600';
+            const password = setPasswordInput.value;
+            passwordStatus.textContent = 'Setting password...';
+            passwordStatus.className = 'text-sm text-blue-600';
 
-                try {
-                    const response = await fetch(`${apiUrl}/namespace/password?namespace=${currentNamespaceId}&admin=${currentAdminKey}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ password }),
-                    });
+            try {
+                const response = await fetch(`${apiUrl}/namespace/password?namespace=${currentNamespaceId}&admin=${currentAdminKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ password }),
+                });
 
-                    const result = await response.json();
+                const result = await response.json();
 
-                    if (!response.ok) {
-                        throw new Error(result.message || 'Failed to set password.');
-                    }
-
-                    setPasswordInput.value = '';
-                    passwordStatus.textContent = result.message;
-                    passwordStatus.className = 'text-sm text-green-600';
-
-                    // Clear status after a delay
-                    setTimeout(() => {
-                        passwordStatus.textContent = result.isProtected ? 
-                            'Namespace is password protected.' : 
-                            'Namespace is not password protected.';
-                        passwordStatus.className = 'text-sm text-gray-600';
-                    }, 3000);
-
-                } catch (error) {
-                    console.error('Error setting password:', error);
-                    passwordStatus.textContent = `Error: ${error.message}`;
-                    passwordStatus.className = 'text-sm text-red-600';
+                if (!response.ok) {
+                    throw new Error(result.message || 'Failed to set password.');
                 }
+
+                setPasswordInput.value = '';
+                passwordStatus.textContent = result.message;
+                passwordStatus.className = 'text-sm text-green-600';
+
+                // Clear status after a delay
+                setTimeout(() => {
+                    passwordStatus.textContent = result.isProtected ?
+                        'Namespace is password protected.' :
+                        'Namespace is not password protected.';
+                    passwordStatus.className = 'text-sm text-gray-600';
+                }, 3000);
+
+            } catch (error) {
+                console.error('Error setting password:', error);
+                passwordStatus.textContent = `Error: ${error.message}`;
+                passwordStatus.className = 'text-sm text-red-600';
             }
+        }
 
         // --- Utility ---
         function setStatusMessage(message, isError = false) {
@@ -1246,28 +1340,28 @@
 
         // --- MODIFICATION START: New function to process logo/namespace data ---
         function processLogosResponse(responseData) {
-             const logos = responseData.logos || [];
-             currentFriendlyUrlName = responseData.friendlyUrlName || null; // Update global state
-             const currentNamespaceDescription = responseData.namespaceDescription || ""; // Get namespace description
+            const logos = responseData.logos || [];
+            currentFriendlyUrlName = responseData.friendlyUrlName || null; // Update global state
+            const currentNamespaceDescription = responseData.namespaceDescription || ""; // Get namespace description
 
-             // --- MODIFICATION: Ensure description is part of the logo object ---
-             displayedLogos = logos.map(logo => ({
-                 ...logo,
-                 description: logo.description || "" // Ensure description exists
-             }));
-             // --- END MODIFICATION ---
+            // --- MODIFICATION: Ensure description is part of the logo object ---
+            displayedLogos = logos.map(logo => ({
+                ...logo,
+                description: logo.description || "" // Ensure description exists
+            }));
+            // --- END MODIFICATION ---
 
-             if (logos.length === 0) {
+            if (logos.length === 0) {
                 noLogosMessage.style.display = 'block';
-                 setStatusMessage('', false);
+                setStatusMessage('', false);
             } else {
-                 noLogosMessage.style.display = 'none';
-                 logoGrid.innerHTML = ''; // Clear grid before adding new elements
+                noLogosMessage.style.display = 'none';
+                logoGrid.innerHTML = ''; // Clear grid before adding new elements
                 displayedLogos.forEach((logo, index) => { // Use updated displayedLogos
                     const logoElement = createLogoElement(logo, index);
                     logoGrid.appendChild(logoElement);
                 });
-                 setStatusMessage('', false);
+                setStatusMessage('', false);
             }
 
             // === NEW: Update Namespace Description Display ===
@@ -1276,7 +1370,7 @@
                 descriptionInput.value = currentNamespaceDescription; // Populate admin textarea
                 updateCharacterCount(); // Update count on load
             }
-             // === END NEW ===
+            // === END NEW ===
 
             // Update friendly URL display elements after processing
             updateFriendlyUrlDisplay();
@@ -1288,24 +1382,24 @@
 
         // --- MODIFICATION START: New function to update friendly URL UI elements ---
         function updateFriendlyUrlDisplay() {
-             if (isAdmin) { // Only show input/current if admin
-                 friendlyUrlInput.value = currentFriendlyUrlName || '';
-                 currentFriendlyUrlSpan.textContent = currentFriendlyUrlName || 'None';
-             }
+            if (isAdmin) { // Only show input/current if admin
+                friendlyUrlInput.value = currentFriendlyUrlName || '';
+                currentFriendlyUrlSpan.textContent = currentFriendlyUrlName || 'None';
+            }
 
-             // Update share link visibility and content
-             if (currentFriendlyUrlName) {
-                 const friendlyUrl = `${window.location.origin}/v/${currentFriendlyUrlName}`;
-                 friendlyLinkA.href = friendlyUrl;
-                 friendlyLinkA.textContent = friendlyUrl;
-                 friendlyLinkP.style.display = 'block';
-             } else {
-                 friendlyLinkP.style.display = 'none';
-             }
-             // --- I18N: Translate elements updated by this function ---
-             // (Specifically the 'Current: {url}' part)
-             translatePage();
-             // --- END I18N ---
+            // Update share link visibility and content
+            if (currentFriendlyUrlName) {
+                const friendlyUrl = `${window.location.origin}/v/${currentFriendlyUrlName}`;
+                friendlyLinkA.href = friendlyUrl;
+                friendlyLinkA.textContent = friendlyUrl;
+                friendlyLinkP.style.display = 'block';
+            } else {
+                friendlyLinkP.style.display = 'none';
+            }
+            // --- I18N: Translate elements updated by this function ---
+            // (Specifically the 'Current: {url}' part)
+            translatePage();
+            // --- END I18N ---
         }
         // --- MODIFICATION END ---
 
@@ -1334,13 +1428,13 @@
                 if (!response.ok) {
                     // Handle specific conflict error
                     if (response.status === 409) {
-                         const errorMessage = result.message || 'Failed to set friendly URL.';
-                         friendlyUrlStatus.textContent = t('statusFriendlyUrlError', { message: errorMessage });
-                         friendlyUrlStatus.className = 'mt-1 text-sm text-red-600';
+                        const errorMessage = result.message || 'Failed to set friendly URL.';
+                        friendlyUrlStatus.textContent = t('statusFriendlyUrlError', { message: errorMessage });
+                        friendlyUrlStatus.className = 'mt-1 text-sm text-red-600';
                     } else {
                         throw new Error(result.message || `Failed to set friendly URL: ${response.statusText}`);
                     }
-                     setStatusMessage(`Error: ${result.message || 'Failed to set friendly URL.'}`, true); // General status
+                    setStatusMessage(`Error: ${result.message || 'Failed to set friendly URL.'}`, true); // General status
                 } else {
                     setStatusMessage('Friendly URL updated!', false); // General status
                     friendlyUrlStatus.textContent = `Current: ${result.friendlyUrlName || 'None'}`; // Specific status
@@ -1388,8 +1482,8 @@
 
             // No need for setStatusMessage here, use the local status element
             if (statusElement) {
-                 statusElement.textContent = 'Saving...';
-                 statusElement.className = 'text-xs text-blue-600 h-4';
+                statusElement.textContent = 'Saving...';
+                statusElement.className = 'text-xs text-blue-600 h-4';
             }
 
             try {
@@ -1412,9 +1506,9 @@
                     statusElement.className = 'text-xs text-green-600 h-4';
                     // Optionally clear the 'Saved!' message after a delay
                     setTimeout(() => {
-                         if (statusElement.textContent === 'Saved!') {
-                             statusElement.textContent = '';
-                         }
+                        if (statusElement.textContent === 'Saved!') {
+                            statusElement.textContent = '';
+                        }
                     }, 3000);
                 }
                 // Update the internal data store if needed (optional, as loadLogos refetches)
@@ -1435,16 +1529,17 @@
         }
         // --- END MODIFICATION ---
 
-            // Add event listeners for password functionality
-            submitPasswordBtn.addEventListener('click', () => verifyPassword(passwordInput.value));
-            setPasswordBtn.addEventListener('click', handleSetPassword);
+        // Add event listeners for password functionality
+        submitPasswordBtn.addEventListener('click', () => verifyPassword(passwordInput.value));
+        setPasswordBtn.addEventListener('click', handleSetPassword);
 
-            // Handle Enter key in password input
-            passwordInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    verifyPassword(passwordInput.value);
-                }
-            });
+        // Handle Enter key in password input
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                verifyPassword(passwordInput.value);
+            }
+        });
     </script>
 </body>
+
 </html>
