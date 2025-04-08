@@ -1,5 +1,4 @@
 {
-  "appTitle": "VoteImage Tool",
   "currentNamespace": "Current Namespace",
   "loading": "Loading...",
   "adminControls": "Admin Controls",
@@ -131,5 +130,6 @@
   "saveDescriptionBtn": "Save Description",
   "characterCount": "Characters:",
   "namespaceDescription": "Voting Purpose",
-  "statusDescriptionSaved": "Description saved!"
+  "statusDescriptionSaved": "Description saved!",
+  "statusVoteExists": "You have already voted for this logo."
 }

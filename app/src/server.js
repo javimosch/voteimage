@@ -468,7 +468,7 @@ app.post('/vote', async (req, res) => {
         }
 
         if (logo.votes.includes(identifier)) {
-            return res.status(409).json({ message: 'Identifier has already voted for this logo.' });
+            return res.status(409).json({ message: 'IDENTIFIER_VOTE_EXISTS' });
         }
 
         logo.votes.push(identifier);
@@ -1011,9 +1011,12 @@ app.get('/v/:friendlyUrlName', (req, res) => {
 
 // --- Serve index.html at root ---
 const DEFAULT_LANG = process.env.DEFAULT_LANG || 'fr'; // Default to French if not set
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
     res.setHeader('X-Default-Lang', DEFAULT_LANG);
-    res.sendFile(path.join(__dirname, 'index.html'));
+    const appName = process.env.APP_NAME || 'VoteImage';
+    //read file and inject $appName
+    const html = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+    res.send(html.split('$appName').join(appName));
 });
 
 // --- Server Start ---

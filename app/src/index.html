@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="appTitle">VoteImage Tool</title>
+    <title >$appName</title>
     <script defer data-domain="choisirlogo.enbauges.fr" src="https://psible.coolify.intrane.fr/js/script.js"></script>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -136,7 +136,12 @@
             <a id="lang-fr" class="px-3 py-1 rounded transition-colors duration-150 cursor-pointer">FR</a>
         </div>
         <div class="container mx-auto bg-white p-6 rounded-lg shadow-md">
-        <h1 class="text-3xl font-bold mb-6 text-center text-blue-600 hover:text-blue-700 transition-colors duration-150" data-i18n="appTitle">VoteImage Tool</h1>
+        
+        
+        
+            <a href="/">
+                <h1 class="text-3xl font-bold mb-6 text-center text-blue-600 hover:text-blue-700 transition-colors duration-150" >$appName</h1>
+            </a>
 
         <!-- Namespace Info with enhanced styling -->
         <div id="namespace-info" class="mb-6 p-6 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg shadow-sm">
@@ -222,7 +227,7 @@
         <!-- Create Namespace Section -->
         <div id="create-namespace-section" class="mb-8 text-center">
             <p id="welcome-message" class="mb-6 text-lg text-gray-700" data-i18n="welcomeMessage">Welcome! Create a new voting namespace or access an existing one using the URL.</p>
-            <button id="create-namespace-btn" class="primary-button text-lg px-6 py-3" data-i18n="createNamespaceBtn">Create New Vote Namespace</button>
+            <button id="create-namespace-btn" type="button" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out w-full md:w-auto" data-i18n="createNamespaceBtn">Create New Vote Namespace</button>
         </div>
 
         <!-- Upload Section with enhanced styling -->
@@ -965,12 +970,12 @@
                 if (!response.ok) {
                      // Handle specific conflict case (already voted)
                     if (response.status === 409) {
-                         setStatusMessage(result.message || 'You have already voted for this logo.', true);
+                         setStatusMessage(t('statusVoteExists'), true);
                     } else {
                         throw new Error(result.message || `Vote failed: ${response.statusText}`);
                     }
                 } else {
-                    setStatusMessage('Vote recorded!', false);
+                    setStatusMessage(t('statusVoteRecorded'), false);
                     // Update vote count display dynamically IN THE GRID
                     const voteCountElement = document.getElementById(`votes-${logoId}`);
                     if (voteCountElement) {
@@ -987,6 +992,7 @@
 
             } catch (error) {
                 console.error('Vote error:', error);
+
                 setStatusMessage(`Error: ${error.message}`, true);
             }
         }
